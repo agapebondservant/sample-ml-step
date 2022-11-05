@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import time
 from scdfutils.http_status_server import HttpHealthServer
+import os
 
 HttpHealthServer.run_thread()
 
@@ -14,7 +15,7 @@ HttpHealthServer.run_thread()
 # Credentials:
 #######################################################
 logging.info(f"The credentials are {utils.get_rabbitmq_host()}, {utils.get_rabbitmq_username()}, {utils.get_rabbitmq_password()}")
-logging.info(f"Injected variables: {utils.get_injected_vars()}")
+logging.info(f"Injected variables: {os.environ} ")
 
 #######################################################
 # Producer code:
