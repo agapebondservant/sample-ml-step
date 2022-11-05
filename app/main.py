@@ -14,6 +14,7 @@ HttpHealthServer.run_thread()
 # Credentials:
 #######################################################
 logging.info(f"The credentials are {utils.get_rabbitmq_host()}, {utils.get_rabbitmq_username()}, {utils.get_rabbitmq_password()}")
+logging.info(f"Injected variables: {utils.get_injected_vars()}")
 
 #######################################################
 # Producer code:
