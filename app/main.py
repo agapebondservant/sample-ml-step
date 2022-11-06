@@ -25,12 +25,10 @@ def on_send(self, _channel):
                                                     timestamp=int(datetime.now().timestamp())))
 
 
+# Start publishing messages
 producer = ports.get_rabbitmq_port('producer',
                                    ports.FlowType.OUTBOUND,
                                    send_callback=on_send)
-
-# Start publishing messages
-# producer.start()
 
 time.sleep(5)
 
@@ -47,12 +45,9 @@ def on_receive(self, header, body):
     logging.info(f"Received message...{body.decode('ascii')}")
 
 
+time.sleep(5)
+# Start consuming messages
 consumer = ports.get_rabbitmq_port('consumer',
                                    ports.FlowType.INBOUND,
                                    prefetch_count=0,
                                    receive_callback=on_receive)
-
-time.sleep(5)
-
-# Start consuming messages
-# consumer.start()
