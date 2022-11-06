@@ -1,0 +1,7 @@
+name: ml_example
+
+python_env: python_env.yaml
+
+entry_points:
+  load_data:
+    command: "python -m app.main"
