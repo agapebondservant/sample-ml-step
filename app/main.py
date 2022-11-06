@@ -1,6 +1,6 @@
 from rabbitmq.connection.rabbitmq_producer import RabbitMQProducer
 from rabbitmq.connection.rabbitmq_consumer import RabbitMQConsumer
-from scdfutils import utils
+from scdfutils import utils, ports
 import pika
 from datetime import datetime
 import logging
@@ -12,12 +12,6 @@ HttpHealthServer.run_thread()
 
 
 #######################################################
-# Credentials:
-#######################################################
-logging.info(f"The credentials are {utils.get_rabbitmq_host()}, {utils.get_rabbitmq_username()}, {utils.get_rabbitmq_password()}")
-logging.info(f"Injected variables: {os.environ} ")
-
-#######################################################
 # Producer code:
 #######################################################
 
@@ -25,23 +19,18 @@ logging.info(f"Injected variables: {os.environ} ")
 def on_send(self, _channel):
     """ Publishes data """
     logging.info("in on_send...")
-    self.channel.basic_publish(self.exchange, self.routing_key, self.data,
+    self.channel.basic_publish(self.exchange, self.routing_key, 'HELLO from ML Models',
                                pika.BasicProperties(content_type='text/plain',
                                                     delivery_mode=pika.DeliveryMode.Persistent,
                                                     timestamp=int(datetime.now().timestamp())))
 
 
-producer = RabbitMQProducer(host='toad.rmq.cloudamqp.com',
-                            data='Hello World from ML Models!!!',
-                            username='qcirbflj',
-                            password='lEuhDZXFf1m5O5XoXUHyqa5FYe8FEaZm',
-                            virtual_host='qcirbflj',
-                            exchange='test-exchange',
-                            routing_key='test',
-                            send_callback=on_send)
+producer = ports.get_rabbitmq_port('producer',
+                                   ports.FlowType.OUTBOUND,
+                                   send_callback=on_send)
 
 # Start publishing messages
-producer.start()
+# producer.start()
 
 time.sleep(5)
 
@@ -58,16 +47,12 @@ def on_receive(self, header, body):
     logging.info(f"Received message...{body.decode('ascii')}")
 
 
-consumer = RabbitMQConsumer(host='toad.rmq.cloudamqp.com',
-                            username='qcirbflj',
-                            password='lEuhDZXFf1m5O5XoXUHyqa5FYe8FEaZm',
-                            virtual_host='qcirbflj',
-                            queue='test-queue',
-                            queue_arguments={},
-                            prefetch_count=0,
-                            receive_callback=on_receive)
+consumer = ports.get_rabbitmq_port('consumer',
+                                   ports.FlowType.INBOUND,
+                                   prefetch_count=0,
+                                   receive_callback=on_receive)
 
 time.sleep(5)
 
 # Start consuming messages
-consumer.start()
+# consumer.start()
