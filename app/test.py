@@ -26,4 +26,6 @@ def on_receive(self, header, body):
 
 def process():
     logging.info("Just want to test ML Models...")
+    time.sleep(5)
+    logging.info("Still works!")
     return True
