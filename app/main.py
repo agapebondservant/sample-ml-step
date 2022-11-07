@@ -49,4 +49,6 @@ def process():
                                        prefetch_count=0,
                                        receive_callback=on_receive)
 
+    logging.info("Completed process().")
+
     return True
