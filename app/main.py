@@ -11,11 +11,6 @@ import os
 HttpHealthServer.run_thread()
 
 
-#######################################################
-# Producer code:
-#######################################################
-
-
 def on_send(self, _channel):
     """ Publishes data """
     logging.info("in on_send...")
@@ -25,29 +20,31 @@ def on_send(self, _channel):
                                                     timestamp=int(datetime.now().timestamp())))
 
 
-# Start publishing messages
-producer = ports.get_rabbitmq_port('producer',
-                                   ports.FlowType.OUTBOUND,
-                                   send_callback=on_send)
-
-time.sleep(5)
-
-# Can use to send more data
-producer.send_data('Hello again!')  # Can use to send more data
-
-
-#######################################################
-# Consumer code:
-#######################################################
-
-
 def on_receive(self, header, body):
     logging.info(f"Received message...{body.decode('ascii')}")
 
 
-time.sleep(5)
-# Start consuming messages
-consumer = ports.get_rabbitmq_port('consumer',
-                                   ports.FlowType.INBOUND,
-                                   prefetch_count=0,
-                                   receive_callback=on_receive)
+def process():
+    #######################################################
+    # Producer code:
+    #######################################################
+    # Start publishing messages
+    producer = ports.get_rabbitmq_port('producer',
+                                       ports.FlowType.OUTBOUND,
+                                       send_callback=on_send)
+
+    time.sleep(5)
+
+    # Can use to send more data
+    producer.send_data('Hello again!')  # Can use to send more data
+
+    time.sleep(5)
+
+    #######################################################
+    # Consumer code:
+    #######################################################
+    # Start consuming messages
+    consumer = ports.get_rabbitmq_port('consumer',
+                                       ports.FlowType.INBOUND,
+                                       prefetch_count=0,
+                                       receive_callback=on_receive)
