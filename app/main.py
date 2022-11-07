@@ -48,3 +48,5 @@ def process():
                                        ports.FlowType.INBOUND,
                                        prefetch_count=0,
                                        receive_callback=on_receive)
+
+    return True
