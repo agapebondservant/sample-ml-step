@@ -15,7 +15,7 @@ logger = logging.getLogger('mlmodeltest')
 def on_send(self, _channel):
     """ Publishes data """
     logger.info("in on_send...")
-    self.channel.basic_publish(self.exchange, self.routing_key, 'HELLO from ML Models',
+    self.channel.basic_publish(self.exchange, self.routing_key, (self.data or 'HELLO from ML Models'),
                                pika.BasicProperties(content_type='text/plain',
                                                     delivery_mode=pika.DeliveryMode.Persistent,
                                                     timestamp=int(datetime.now().timestamp())))
@@ -36,8 +36,8 @@ def process():
 
     time.sleep(5)
 
-    # Can use to send more data
-    producer.send_data('Hello again!')  # Can use to send more data
+    # Can use to send data
+    producer.send_data('Hello again!')  # Can also use to send more data/resend data
 
     time.sleep(5)
 
