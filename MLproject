@@ -3,5 +3,3 @@ name: ml_example
 entry_points:
   main:
     command: "python -c 'import app.main; app.main.process()'"
-  test:
-    command: "python -c 'import app.test; app.test.process()'"

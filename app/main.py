@@ -51,5 +51,3 @@ def process():
                                        receive_callback=on_receive)
 
     logger.info("Completed process().")
-
-    return True
