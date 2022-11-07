@@ -1,4 +1,5 @@
 build_dependencies:
+  - python>=3.10.3
   - pip
   - setuptools
   - wheel
