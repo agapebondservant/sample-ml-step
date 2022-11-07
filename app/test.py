@@ -9,11 +9,12 @@ from scdfutils.http_status_server import HttpHealthServer
 import os
 
 HttpHealthServer.run_thread()
+logger = logging.getLogger('mlmodeltest')
 
 
 def on_send(self, _channel):
     """ Publishes data """
-    logging.info("in on_send...")
+    logger.info("in on_send...")
     self.channel.basic_publish(self.exchange, self.routing_key, 'HELLO from ML Models',
                                pika.BasicProperties(content_type='text/plain',
                                                     delivery_mode=pika.DeliveryMode.Persistent,
@@ -21,11 +22,11 @@ def on_send(self, _channel):
 
 
 def on_receive(self, header, body):
-    logging.info(f"Received message...{body.decode('ascii')}")
+    logger.info(f"Received message...{body.decode('ascii')}")
 
 
 def process():
-    logging.info("Just want to test ML Models...")
+    logger.info("Just want to test ML Models...")
     time.sleep(5)
-    logging.info("Still works!")
+    logger.info("Still works!")
     return True
