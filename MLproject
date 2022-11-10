@@ -2,4 +2,6 @@ name: ml_example
 
 entry_points:
   main:
+    parameters:
+        msg: 'Initial test'
     command: "python -c 'import app.main; app.main.process()'"
