@@ -3,5 +3,5 @@ name: ml_example
 entry_points:
   main:
     parameters:
-        msg1: {default: 'Initial test'}
+        msg1: {default: "Initial test"}
     command: "python -c 'import app.main; app.main.process({msg1})'"
