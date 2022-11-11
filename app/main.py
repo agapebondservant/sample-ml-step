@@ -26,7 +26,7 @@ def on_receive(self, header, body):
     logger.info(f"Received message...{body.decode('ascii')}")
 
 
-@scdf_adapter
+@scdf_adapter(environment=None)
 def process(msg):
     # Print MLproject parameter(s)
     logger.info(f"MLflow parameters: {msg}")
