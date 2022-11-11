@@ -1,6 +1,7 @@
 from rabbitmq.connection.rabbitmq_producer import RabbitMQProducer
 from rabbitmq.connection.rabbitmq_consumer import RabbitMQConsumer
-from scdfutils import utils, ports, scdf_adapter
+from scdfutils import utils, ports
+from scdfutils.run_adapter import scdf_adapter
 import pika
 from datetime import datetime
 import logging
