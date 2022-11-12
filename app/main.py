@@ -42,7 +42,7 @@ def process(self, msg):
     time.sleep(5)
 
     # Can use to send data
-    producer.send_data('Hello again!')  # Can also use to send more data/resend data
+    producer.send_data(msg)  # Can also use to send more data/resend data
 
     time.sleep(5)
 
