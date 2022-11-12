@@ -57,3 +57,5 @@ def process(self, msg):
                                        receive_callback=on_receive)
 
     logger.info("Completed process().")
+
+    return f"Hello: {msg}"
