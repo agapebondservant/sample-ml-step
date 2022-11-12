@@ -27,7 +27,7 @@ def on_receive(self, header, body):
 
 
 @scdf_adapter(environment=None)
-def process(msg):
+def process(self, msg):
     # Print MLproject parameter(s)
     logger.info(f"MLflow parameters: {msg}")
 
