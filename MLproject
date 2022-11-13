@@ -4,5 +4,5 @@ entry_points:
   main:
     parameters:
         msg1: {default: 'Initial test'}
-        http: {default: None}
+        http: {default: '{mlparams.http}'}
     command: 'python -c "import app.main; app.main.process({http})"'
