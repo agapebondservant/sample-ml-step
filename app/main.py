@@ -58,4 +58,4 @@ def process(msg):
 
     logger.info("Completed process().")
 
-    return msg
+    return f"Hello, {msg}"
