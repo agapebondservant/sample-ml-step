@@ -8,6 +8,7 @@ from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 import json
 from random import randrange
+import mlflow
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -55,9 +56,14 @@ def process(msg):
                                        prefetch_count=0,
                                        receive_callback=on_receive)
 
+    # Log ML Metrics
+    logger.info("Logging ML metric - msg_weight...")
+    msg_weight = randrange(0, 101)
+    mlflow.log_metric('msg_weight', msg_weight)
+
     # Publish ML metrics
     logger.info("Exporting ML metric - msg_weight...")
-    exporter.prepare_histogram('msg_weight', 'Message Weight', [], randrange(0, 101))
+    exporter.prepare_histogram('msg_weight', 'Message Weight', [], msg_weight)
 
     logger.info("Completed process().")
 
