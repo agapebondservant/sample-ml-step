@@ -1,5 +1,3 @@
-from rabbitmq.connection.rabbitmq_producer import RabbitMQProducer
-from rabbitmq.connection.rabbitmq_consumer import RabbitMQConsumer
 from scdfutils import utils, ports
 from scdfutils.run_adapter import scdf_adapter
 import pika
@@ -7,8 +5,9 @@ from datetime import datetime
 import logging
 import time
 from scdfutils.http_status_server import HttpHealthServer
-import os
+from mlmetrics import exporter
 import json
+from random import randrange
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -55,6 +54,10 @@ def process(msg):
                                        ports.FlowType.INBOUND,
                                        prefetch_count=0,
                                        receive_callback=on_receive)
+
+    # Publish ML metrics
+    logger.info("Exporting ML metric - msg_weight...")
+    exporter.prepare_histogram('msg_weight', 'Message Weight', [], randrange(0, 101))
 
     logger.info("Completed process().")
 
