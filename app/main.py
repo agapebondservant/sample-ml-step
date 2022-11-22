@@ -68,7 +68,8 @@ def process(msg):
     dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'y': y})
 
     # Generate Regression report
-    old_dataset = mlflow.artifacts.load_dict('old_dataset')
+    last_run = mlflow.last_active_run()
+    old_dataset = pd.DataFrame.from_dict(mlflow.artifacts.load_dict(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
     logger.info(f"Found old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['y'] = old_dataset['y'] + np.random.random()*2
@@ -87,6 +88,7 @@ def process(msg):
     tests.run(reference_data=dataset, current_data=old_dataset)
     logger.info(f"Evidently generated results...{tests.json()}")
     mlflow.log_dict(json.loads(tests.json()), 'test_results.json')
+    mlflow.log_dict(dataset.to_dict, 'old_dataset')
     mlflow.log_artifact(tests.html(), 'test_results.html')
 
     # Publish ML metrics
