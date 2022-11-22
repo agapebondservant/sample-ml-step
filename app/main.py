@@ -9,6 +9,12 @@ from mlmetrics import exporter
 import json
 from random import randrange
 import mlflow
+import numpy as np
+import modin.pandas as pd
+from sklearn.metrics import mean_squared_error
+from evidently.test_suite import TestSuite
+from evidently.test_preset import RegressionTestPreset
+import json
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -56,15 +62,38 @@ def process(msg):
                                        prefetch_count=0,
                                        receive_callback=on_receive)
 
-    # Log ML Metrics
+    # Generate random data
+    x = np.linspace(0, np.pi * 8, num=1000)
+    y = np.sin(x) + np.random.randint(0, 100)
+    dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'y': y})
+
+    # Generate Regression report
+    old_dataset = mlflow.artifacts.load_dict('old_dataset')
+    logger.info(f"Found old_dataset...{old_dataset}")
+    old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
+    dataset['y'] = old_dataset['y'] + np.random.random()*2
+
+    # Log Custom ML Metrics
     msg_weight = randrange(0, 101)
     mlflow.log_metric('msg_weight', msg_weight)
-    logger.info(f"Logging ML metric - msg_weight...{msg_weight}")
+    mse = mean_squared_error(dataset['y'], old_dataset['y'])
+    mlflow.log_metric('mse', mse)
+    logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}, mse...{mse}")
+
+    # Perform Evidently Tests
+    tests = TestSuite(tests=[
+        RegressionTestPreset()
+    ])
+    tests.run(reference_data=dataset, current_data=old_dataset)
+    logger.info(f"Evidently generated results...{tests.json()}")
+    mlflow.log_dict(json.loads(tests.json()), 'test_results.json')
+    mlflow.log_artifact(tests.html(), 'test_results.html')
 
     # Publish ML metrics
     logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
-    exporter.prepare_histogram('msg_weight', 'Message Weight', [], msg_weight)
+    exporter.prepare_histogram('msg_weight', 'Message Weight', {}, msg_weight)
+    exporter.prepare_histogram('mse', 'Mean Squared Error', mlflow.active_run().data.tags, mse)
 
     logger.info("Completed process().")
 
-    return f"Hello, {msg}"
+    return dataset
