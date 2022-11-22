@@ -10,7 +10,7 @@ import json
 from random import randrange
 import mlflow
 import numpy as np
-import modin.pandas as pd
+import pandas as pd
 from sklearn.metrics import mean_squared_error
 from evidently.test_suite import TestSuite
 from evidently.test_preset import RegressionTestPreset
