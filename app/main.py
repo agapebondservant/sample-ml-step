@@ -6,15 +6,16 @@ import logging
 import time
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
-import json
 from random import randrange
 import mlflow
+from mlflow import MlflowClient
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 from evidently.test_suite import TestSuite
 from evidently.test_preset import RegressionTestPreset
 import json
+import os
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -67,9 +68,17 @@ def process(msg):
     y = np.sin(x) + np.random.randint(0, 100)
     dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'target': y, 'prediction': y+(np.random.random()*1.5)})
 
-    # Generate Regression report
+    # Download assets
     last_run = mlflow.last_active_run()
-    old_dataset = pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
+    mlflow_client = MlflowClient()
+    local_dir = "/tmp/artifact_downloads"
+    if not os.path.exists(local_dir):
+        os.mkdir(local_dir)
+    local_path = mlflow_client.download_artifacts(last_run.info.run_id, "features", local_dir) if last_run else None
+
+    # Generate Regression report
+    # old_dataset = pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
+    old_dataset = pd.read_json(f"{local_path}/old_dataset") if local_path else None
     logger.info(f"Found old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
@@ -91,12 +100,10 @@ def process(msg):
     logger.info(f"Evidently generated results...{tests_results_json}")
 
     # Upload artifacts
-    test_results_json_file = utils.create_temp_file(tests_results_json)
-    old_dataset_file = utils.create_temp_file(old_dataset)
+    mlflow.log_artifact(utils.create_temp_file(tests_results_json).name, 'test_results.json')
+    mlflow.log_artifact(utils.create_temp_file(old_dataset).name, 'old_dataset')
     tests.save_html('test_results.html')
-    mlflow.log_artifact(test_results_json_file, 'test_results.json')
-    mlflow.log_artifact(old_dataset_file, 'old_dataset')
-    mlflow.log_artifact(open("test_results.html", "a"), 'test_results.html')
+    mlflow.log_artifact("test_results.html", 'test_results.html')
 
     # Publish ML metrics
     logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
