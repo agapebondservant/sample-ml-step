@@ -97,7 +97,7 @@ def process(msg):
 
     # Upload artifacts
     mlflow.log_dict(json.loads(tests_results_json), 'test_results.json')
-    mlflow.log_dict(json.loads(old_dataset), 'old_dataset')
+    mlflow.log_dict(json.loads(old_dataset.to_dict()), 'old_dataset')
     tests.save_html('/tmp/test_results.html')
     mlflow.log_artifact("/tmp/test_results.html", 'test_results.html')
 
