@@ -69,7 +69,12 @@ def process(msg):
 
     # Generate Regression report
     last_run = mlflow.last_active_run()
-    old_dataset = pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
+    old_dataset = None
+    try:
+        pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
+    except BaseException as e:
+        logging.info('Could not download old_dataset: ', exc_info=True)
+        pass
     logger.info(f"Found old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
