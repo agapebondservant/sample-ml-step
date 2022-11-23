@@ -15,7 +15,6 @@ from sklearn.metrics import mean_squared_error
 from evidently.test_suite import TestSuite
 from evidently.test_preset import RegressionTestPreset
 import json
-import os
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -68,17 +67,9 @@ def process(msg):
     y = np.sin(x) + np.random.randint(0, 100)
     dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'target': y, 'prediction': y+(np.random.random()*1.5)})
 
-    # Download assets
-    last_run = mlflow.last_active_run()
-    mlflow_client = MlflowClient()
-    local_dir = "/tmp/artifact_downloads"
-    if not os.path.exists(local_dir):
-        os.mkdir(local_dir)
-    local_path = mlflow_client.download_artifacts(last_run.info.run_id, "features", local_dir) if last_run else None
-
     # Generate Regression report
-    # old_dataset = pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
-    old_dataset = pd.read_json(f"{local_path}/old_dataset") if local_path else None
+    last_run = mlflow.last_active_run()
+    old_dataset = pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
     logger.info(f"Found old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
