@@ -69,7 +69,7 @@ def process(msg):
 
     # Generate Regression report
     last_run = mlflow.last_active_run()
-    old_dataset = pd.DataFrame.from_dict(mlflow.artifacts.load_dict(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
+    old_dataset = pd.DataFrame.read_json(mlflow.artifacts.load_artifact(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
     logger.info(f"Found old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
