@@ -71,11 +71,11 @@ def process(msg):
     last_run = mlflow.last_active_run()
     old_dataset = None
     try:
-        pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
+        old_dataset = pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
     except BaseException as e:
         logging.info('Could not download old_dataset: ', exc_info=True)
         pass
-    logger.info(f"Found old_dataset...{old_dataset}")
+    logger.info(f"old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
     logger.info(f"Datasets:\nNew Dataset: {dataset}\nOld Dataset: {old_dataset}")
@@ -96,10 +96,10 @@ def process(msg):
     logger.info(f"Evidently generated results...{tests_results_json}")
 
     # Upload artifacts
-    mlflow.log_artifact(utils.create_temp_file(tests_results_json).name, 'test_results.json')
-    mlflow.log_artifact(utils.create_temp_file(old_dataset).name, 'old_dataset')
-    tests.save_html('test_results.html')
-    mlflow.log_artifact("test_results.html", 'test_results.html')
+    mlflow.log_dict(json.loads(tests_results_json), 'test_results.json')
+    mlflow.log_dict(json.loads(old_dataset), 'old_dataset')
+    tests.save_html('/tmp/test_results.html')
+    mlflow.log_artifact("/tmp/test_results.html", 'test_results.html')
 
     # Publish ML metrics
     logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
