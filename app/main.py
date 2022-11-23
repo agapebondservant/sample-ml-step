@@ -65,19 +65,20 @@ def process(msg):
     # Generate random data
     x = np.linspace(0, np.pi * 8, num=1000)
     y = np.sin(x) + np.random.randint(0, 100)
-    dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'y': y})
+    dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'target': y, 'prediction': y+(np.random.random()*1.5)})
 
     # Generate Regression report
     last_run = mlflow.last_active_run()
     old_dataset = pd.DataFrame.from_dict(mlflow.artifacts.load_dict(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
     logger.info(f"Found old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
-    dataset['y'] = old_dataset['y'] + np.random.random()*2
+    dataset['prediction'] = old_dataset['prediction'] + np.random.random()
+    logger.info(f"Datasets:\nNew Dataset: {dataset}\nOld Dataset: {old_dataset}")
 
     # Log Custom ML Metrics
     msg_weight = randrange(0, 101)
     mlflow.log_metric('msg_weight', msg_weight)
-    mse = mean_squared_error(dataset['y'], old_dataset['y'])
+    mse = mean_squared_error(dataset['target'], dataset['prediction'])
     mlflow.log_metric('mse', mse)
     logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}, mse...{mse}")
 
