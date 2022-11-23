@@ -87,10 +87,16 @@ def process(msg):
         RegressionTestPreset()
     ])
     tests.run(reference_data=dataset, current_data=old_dataset)
-    logger.info(f"Evidently generated results...{tests.json()}")
-    mlflow.log_dict(json.loads(tests.json()), 'test_results.json')
-    mlflow.log_dict(dataset.to_dict, 'old_dataset')
-    mlflow.log_artifact(tests.html(), 'test_results.html')
+    tests_results_json = tests.json()
+    logger.info(f"Evidently generated results...{tests_results_json}")
+
+    # Upload artifacts
+    test_results_json_file = utils.create_temp_file(tests_results_json)
+    old_dataset_file = utils.create_temp_file(old_dataset)
+    tests.save_html('test_results.html')
+    mlflow.log_artifact(test_results_json_file, 'test_results.json')
+    mlflow.log_artifact(old_dataset_file, 'old_dataset')
+    mlflow.log_artifact(open("test_results.html", "a"), 'test_results.html')
 
     # Publish ML metrics
     logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
