@@ -8,13 +8,14 @@ from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 from random import randrange
 import mlflow
-from mlflow import MlflowClient
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 from evidently.test_suite import TestSuite
 from evidently.test_preset import RegressionTestPreset
 import json
+import nest_asyncio
+nest_asyncio.apply()
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -68,15 +69,9 @@ def process(msg):
     dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'target': y, 'prediction': y+(np.random.random()*1.5)})
 
     # Generate Regression report
-    last_run = mlflow.last_active_run()
-    logger.info(f"Last active run...{last_run.info.artifact_uri}")
-    old_dataset = None
-    try:
-        old_dataset = pd.read_json(mlflow.artifacts.download_artifacts(last_run.info.artifact_uri + '/old_dataset')) if last_run else None
-    except BaseException as e:
-        logging.info('Could not download old_dataset: ', exc_info=True)
-        pass
-    logger.info(f"old_dataset...{old_dataset}")
+    old_dataset_path = await utils.get_mlflow_artifacts_inbound_port(artifact_name='old_dataset')
+    old_dataset = pd.read_json(old_dataset_path) if old_dataset_path else None
+    logger.info(f"downloaded old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
     logger.info(f"Datasets:\nNew Dataset: {dataset}\nOld Dataset: {old_dataset}")
