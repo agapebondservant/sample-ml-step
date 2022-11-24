@@ -71,7 +71,7 @@ def process(msg):
     old_dataset_path = '/parent/mldata/old_dataset'
     old_dataset = pd.read_json('/parent/mldata/old_dataset') if exists(old_dataset_path) else None
     logger.info(f"downloaded old_dataset...{old_dataset}")
-    old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
+    old_dataset = old_dataset.copy() if old_dataset is not None else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
     logger.info(f"Datasets:\nNew Dataset: {dataset}\nOld Dataset: {old_dataset}")
 
