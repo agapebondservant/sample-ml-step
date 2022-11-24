@@ -96,10 +96,10 @@ def process(msg):
     logger.info(f"Evidently generated results...{tests_results_json}")
 
     # Upload artifacts
-    mlflow.log_dict(json.loads(tests_results_json), 'test_results.json')
-    mlflow.log_dict(old_dataset.to_dict(), 'old_dataset')
+    mlflow.log_artifact(utils.create_temp_file(tests_results_json).name, 'test_results.json')
+    mlflow.log_artifact(utils.create_temp_file(old_dataset.to_dict()).name, 'old_dataset')
     tests.save_html('/tmp/test_results.html')
-    mlflow.log_artifact("/tmp/test_results.html", 'test_results.html')
+    mlflow.log_artifact("/tmp/test_results.html")
 
     # Publish ML metrics
     logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
