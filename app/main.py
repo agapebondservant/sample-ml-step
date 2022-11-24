@@ -14,8 +14,7 @@ from sklearn.metrics import mean_squared_error
 from evidently.test_suite import TestSuite
 from evidently.test_preset import RegressionTestPreset
 import json
-import nest_asyncio
-nest_asyncio.apply()
+from os.path import exists
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -69,8 +68,8 @@ def process(msg):
     dataset = pd.DataFrame({'x': x, 'xlabel': f"Hello, {msg}", 'target': y, 'prediction': y+(np.random.random()*1.5)})
 
     # Generate Regression report
-    old_dataset_path = await utils.get_mlflow_artifacts_inbound_port(artifact_name='old_dataset')
-    old_dataset = pd.read_json(old_dataset_path) if old_dataset_path else None
+    old_dataset_path = '/parent/mldata/old_dataset'
+    old_dataset = pd.read_json('/parent/mldata/old_dataset') if exists(old_dataset_path) else None
     logger.info(f"downloaded old_dataset...{old_dataset}")
     old_dataset = old_dataset.copy() if old_dataset else dataset.copy()
     dataset['prediction'] = old_dataset['prediction'] + np.random.random()
