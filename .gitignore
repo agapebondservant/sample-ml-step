@@ -1,2 +1,4 @@
 app/__pycache__/
+data/educates/sample-ml-step/data/tmp.py
+data/educates/sample-ml-step/data/__init__.py
 .env
