@@ -14,7 +14,7 @@ from sklearn.metrics import mean_squared_error
 import json
 from os.path import exists
 
-# HttpHealthServer.run_thread()
+HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
