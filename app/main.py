@@ -20,6 +20,19 @@ buffer = []
 dataset = None
 
 #######################################################
+# Producer code: Callback for producer
+#######################################################
+
+
+def on_send(self, _channel):
+    """ Publishes data """
+    logger.info("in on_send...")
+    self.channel.basic_publish(self.exchange, self.routing_key, (json.dumps(self.data) or 'HELLO from ML Models'),
+                               pika.BasicProperties(content_type='text/plain',
+                                                    delivery_mode=pika.DeliveryMode.Persistent,
+                                                    timestamp=int(datetime.now().timestamp())))
+
+#######################################################
 # Consumer code: Callback for consumer
 #######################################################
 
@@ -44,7 +57,8 @@ def process(msg):
     #######################################################
     # Start publishing messages
     producer = ports.get_rabbitmq_port('producer',
-                                       ports.FlowType.OUTBOUND)
+                                       ports.FlowType.OUTBOUND,
+                                       send_callback=on_send)
 
     time.sleep(5)
 
