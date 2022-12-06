@@ -104,9 +104,9 @@ def process(msg):
         if version:
             baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
         else:
-            baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
-            logger.info("Created new baseline model - registering model...")
             try:
+                baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
+                logger.info(f"Created new baseline model {baseline_model} - registering model...")
                 mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model')
                 logger.info("Logged model to Model Registry.")
             except BaseException as e:
