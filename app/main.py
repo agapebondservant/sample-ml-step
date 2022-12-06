@@ -107,7 +107,7 @@ def process(msg):
             try:
                 baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
                 logger.info(f"Created new baseline model {baseline_model} - registering model...")
-                mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model')
+                mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model', registered_model_name='baseline_model')
                 logger.info("Logged model to Model Registry.")
             except BaseException as e:
                 logging.error("Could not register model", exc_info=True)
@@ -197,8 +197,7 @@ def evaluate(data):
                 logger.info("Candidate model promoted successfully.")
 
                 logging.info("Updating baseline model...")
-                # mlflow.sklearn.log_model(sk_model=model, artifact_path="sk_models", registered_model_name='')
-                mlflow.sklearn.log_model(sk_model=candidate_model, artifact_path='baseline_model')
+                mlflow.sklearn.log_model(sk_model=candidate_model, artifact_path='baseline_model', registered_model_name='baseline_model')
 
                 logger.info("Baseline model updated successfully.")
 
