@@ -99,11 +99,14 @@ def process(msg):
 
         # Generate and store baseline model if it does not already exist
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
+        logger.info(f"Version...{version}")
         if version:
             baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
         else:
             baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
+            logger.info("Created new baseline model - registering model...")
             mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model')
+            logger.info("Logged model to Model Registry.")
 
         # Log Custom ML Metrics
         msg_weight = randrange(0, 101)
