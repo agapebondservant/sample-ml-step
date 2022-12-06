@@ -95,7 +95,7 @@ def process(msg):
 
     # Once the window size is large enough, start processing
     if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200):
-        dataframe = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
+        dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
 
         # Generate and store baseline model if it does not already exist
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
@@ -121,7 +121,7 @@ def process(msg):
         # RESET globals
         #######################################################
         buffer = []
-        dataframe = None
+        dataset = None
     else:
         logger.info(f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
     logger.info("Completed process().")
@@ -151,7 +151,7 @@ def evaluate(data):
 
         # Load existing baseline model (or generate dummy regressor if no model exists)
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
-        baseline_model = None
+
         if version:
             baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
 
