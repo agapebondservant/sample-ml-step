@@ -13,6 +13,7 @@ import pandas as pd
 from mlflow.models import MetricThreshold
 import json
 from sklearn.dummy import DummyRegressor
+import traceback
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -105,8 +106,13 @@ def process(msg):
         else:
             baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
             logger.info("Created new baseline model - registering model...")
-            mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model')
-            logger.info("Logged model to Model Registry.")
+            try:
+                mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model')
+                logger.info("Logged model to Model Registry.")
+            except BaseException as e:
+                logging.error("Could not register model", exc_info=True)
+                traceback.print_exc()
+                raise e
 
         # Log Custom ML Metrics
         msg_weight = randrange(0, 101)
