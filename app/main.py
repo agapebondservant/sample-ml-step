@@ -32,27 +32,26 @@ dataset = None
                                                     delivery_mode=pika.DeliveryMode.Persistent,
                                                     timestamp=int(datetime.now().timestamp())))"""
 
-
 #######################################################
 # Consumer code: Callback for consumer
 #######################################################
 
 
-def on_receive(self, header, body):
+"""def on_receive(self, header, body):
     global buffer
     data = body.decode('ascii')
     logger.info(f"Received message...{data}")
-    buffer.append(data)
+    buffer.append(data)"""
 
-
+"""
 def load_ports():
     #######################################################
     # Producer code:
     #######################################################
     # Start publishing messages
-    """producer = ports.get_rabbitmq_port('producer',
+    """"""producer = ports.get_rabbitmq_port('producer',
                                        ports.FlowType.OUTBOUND,
-                                       send_callback=on_send)"""
+                                       send_callback=on_send)""""""
 
     time.sleep(5)
 
@@ -60,10 +59,10 @@ def load_ports():
     # Consumer code:
     #######################################################
     # Start consuming messages
-    """consumer = ports.get_rabbitmq_port('consumer',
+    """"""consumer = ports.get_rabbitmq_port('consumer',
                                        ports.FlowType.INBOUND,
                                        prefetch_count=0,
-                                       receive_callback=on_receive)"""
+                                       receive_callback=on_receive)""""""
     raw_port = ports.get_rabbitmq_port(':firehose_proxy.raw',
                                        ports.FlowType.INBOUND,
                                        prefetch_count=0,
@@ -75,6 +74,7 @@ def load_ports():
 
     # return ports for raw data and processed data
     return raw_port
+"""
 
 
 @scdf_adapter(environment=None)
@@ -86,38 +86,25 @@ def process(msg):
     # Print MLproject parameter(s)
     logger.info(f"MLflow parameters: {msg}")
 
-    load_ports()
+    # load_ports()
 
     #######################################################
     # BEGIN processing
     #######################################################
+    buffer.append(msg.split(','))
+
     # Once the window size is large enough, start processing
     if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 1000):
-        # Generate dataset
-        with open("data/schema.csv", "r") as f:
-            columns = f.read().split(',')
-            logger.info(f"Columns in schema: {columns}")
-        dataset = pd.DataFrame(data=buffer, columns=columns)
+        dataframe = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
 
         # Generate and store baseline model if it does not already exist
         version = next(iter(map(lambda mv: mv.version, client.get_latest_versions('baseline_model', stages=['None']))),
                        None)
-        baseline_model = None
         if version:
             baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
         else:
             baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
             mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model')
-
-        """client.get_latest_versions(name, stages=["None"]) returns [m{version,...}: ModelVersion]
-        client = MlflowClient()
-        client.transition_model_version_stage(
-            name="sk-learn-random-forest-reg-model",
-            version=3,
-            stage="Production"
-        )
-        mlflow.sklearn.log_model(sk_model=model, artifact_path="sk_models", registered_model_name='')
-        """
 
         # Log Custom ML Metrics
         msg_weight = randrange(0, 101)
@@ -131,8 +118,13 @@ def process(msg):
         logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
         exporter.prepare_histogram('msg_weight', 'Message Weight', mlflow.active_run().data.tags, msg_weight)
 
+        #######################################################
+        # RESET globals
+        #######################################################
+        buffer = []
+        dataframe = None
+
     logger.info("Completed process().")
-    buffer = []
 
     # Can use to send data
     # producer.send_data(msg)
@@ -146,24 +138,20 @@ def process(msg):
 @scdf_adapter(environment=None)
 def evaluate(data):
     global buffer, dataset
+    buffer.append(True)
 
     client = MlflowClient()
 
     # Print MLproject parameter(s)
     logger.info(f"MLflow parameters: {data}")
 
-    load_ports()
+    # load_ports()
 
     #######################################################
     # BEGIN processing
     #######################################################
     # Once the window size is large enough, start processing
     if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 1000):
-        # Generate dataset
-        with open("data/schema.csv", "r") as f:
-            columns = f.read().split(',')
-            logger.info(f"Columns in schema: {columns}")
-        dataset = pd.DataFrame(data=buffer, columns=columns)
 
         # Load existing baseline model (or generate dummy regressor if no model exists)
         version = next(iter(map(lambda mv: mv.version, client.get_latest_versions('baseline_model', stages=['None']))),
@@ -173,7 +161,7 @@ def evaluate(data):
             baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
 
             # Generate candidate model
-            candidate_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
+            candidate_model = DummyRegressor(strategy="mean").fit(data['x'], data['target'])
 
             # if model evaluation passes, promote candidate model to "staging", else retain baseline model
             logging.info(f"Evaluating baseline vs candidate models: version={version}")
@@ -205,6 +193,7 @@ def evaluate(data):
                 logger.info("Candidate model promoted successfully.")
 
                 logging.info("Updating baseline model...")
+                # mlflow.sklearn.log_model(sk_model=model, artifact_path="sk_models", registered_model_name='')
                 mlflow.sklearn.log_model(sk_model=candidate_model, artifact_path='baseline_model')
 
                 logger.info("Baseline model updated successfully.")
@@ -220,8 +209,13 @@ def evaluate(data):
         else:
             logger.error("Baseline model not found...could not perform evaluation")
 
+        #######################################################
+        # RESET globals
+        #######################################################
+        buffer = []
+        dataframe = None
+
     logger.info("Completed process().")
-    buffer = []
 
     # Can use to send data
     # producer.send_data(msg)
