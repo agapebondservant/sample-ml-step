@@ -110,7 +110,7 @@ def process(msg):
                 mlflow.sklearn.log_model(sk_model=baseline_model, artifact_path='baseline_model', registered_model_name='baseline_model')
                 logger.info("Logged model to Model Registry.")
             except BaseException as e:
-                logging.error("Could not register model", exc_info=True)
+                logger.info("Could not register model", exc_info=True)
                 traceback.print_exc()
                 raise e
 
