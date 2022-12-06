@@ -92,7 +92,7 @@ def process(msg):
     # BEGIN processing
     #######################################################
     # Once the window size is large enough, start processing
-    if len(buffer) > utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE'):
+    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 1000):
         # Generate dataset
         with open("data/schema.csv", "r") as f:
             columns = f.read().split(',')
@@ -158,7 +158,7 @@ def evaluate(data):
     # BEGIN processing
     #######################################################
     # Once the window size is large enough, start processing
-    if len(buffer) > utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE'):
+    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 1000):
         # Generate dataset
         with open("data/schema.csv", "r") as f:
             columns = f.read().split(',')
