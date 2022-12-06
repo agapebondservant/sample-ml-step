@@ -94,7 +94,7 @@ def process(msg):
     buffer.append(msg.split(','))
 
     # Once the window size is large enough, start processing
-    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 1000):
+    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200):
         dataframe = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
 
         # Generate and store baseline model if it does not already exist
@@ -123,7 +123,8 @@ def process(msg):
         #######################################################
         buffer = []
         dataframe = None
-
+    else:
+        logger.info(f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
     logger.info("Completed process().")
 
     # Can use to send data
@@ -214,6 +215,9 @@ def evaluate(data):
         #######################################################
         buffer = []
         dataframe = None
+
+    else:
+        logger.info(f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
 
     logger.info("Completed process().")
 
