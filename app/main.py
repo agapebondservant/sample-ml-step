@@ -151,7 +151,7 @@ def evaluate(data):
     # BEGIN processing
     #######################################################
     # Once the window size is large enough, start processing
-    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 1000):
+    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200):
 
         # Load existing baseline model (or generate dummy regressor if no model exists)
         version = next(iter(map(lambda mv: mv.version, client.get_latest_versions('baseline_model', stages=['None']))),
