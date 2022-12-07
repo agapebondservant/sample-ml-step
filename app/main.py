@@ -80,153 +80,160 @@ def load_ports():
 
 @scdf_adapter(environment=None)
 def process(msg):
-    global buffer, dataset
 
-    client = MlflowClient()
+    mlflow.end_run()
+    with mlflow.start_run(experiment_id=utils.get_env_var("MLFLOW_EXPERIMENT_ID")) as active_run:
 
-    # Print MLproject parameter(s)
-    logger.info(f"MLflow parameters: {msg}")
+        global buffer, dataset
 
-    # load_ports()
+        client = MlflowClient()
 
-    #######################################################
-    # BEGIN processing
-    #######################################################
-    buffer.append(msg.split(','))
+        # Print MLproject parameter(s)
+        logger.info(f"MLflow parameters: {msg}")
 
-    # Once the window size is large enough, start processing
-    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200):
-        dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
+        # load_ports()
 
-        # Generate and store baseline model if it does not already exist
-        version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
-        logger.info(f"Version...{version}")
-        if version:
-            baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
+        #######################################################
+        # BEGIN processing
+        #######################################################
+        buffer.append(msg.split(','))
+
+        # Once the window size is large enough, start processing
+        if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200):
+            dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
+
+            # Generate and store baseline model if it does not already exist
+            version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
+            logger.info(f"Version...{version}")
+            if version:
+                baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
+            else:
+                try:
+                    baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
+                    logger.info(f"Created new baseline model {baseline_model} - registering model...")
+                    mlflow.sklearn.log_model(sk_model=baseline_model,
+                                             artifact_path='baseline_model',
+                                             registered_model_name='baseline_model',
+                                             await_registration_for=None)
+                    logger.info("Logged model to Model Registry.")
+                except BaseException as e:
+                    logger.info("Could not register model", exc_info=True)
+                    traceback.print_exc()
+                    raise e
+
+            # Log Custom ML Metrics
+            msg_weight = randrange(0, 101)
+            mlflow.log_metric('msg_weight', msg_weight)
+            logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}")
+
+            # Upload artifacts
+            mlflow.log_dict(dataset.to_dict(), 'old_dataset')
+
+            # Publish ML metrics
+            logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
+            exporter.prepare_histogram('msg_weight', 'Message Weight', mlflow.active_run().data.tags, msg_weight)
+
+            #######################################################
+            # RESET globals
+            #######################################################
+            buffer = []
+            dataset = None
         else:
-            try:
-                baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
-                logger.info(f"Created new baseline model {baseline_model} - registering model...")
-                mlflow.sklearn.log_model(sk_model=baseline_model,
-                                         artifact_path='baseline_model',
-                                         registered_model_name='baseline_model',
-                                         await_registration_for=None)
-                logger.info("Logged model to Model Registry.")
-            except BaseException as e:
-                logger.info("Could not register model", exc_info=True)
-                traceback.print_exc()
-                raise e
+            logger.info(f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
+        logger.info("Completed process().")
 
-        # Log Custom ML Metrics
-        msg_weight = randrange(0, 101)
-        mlflow.log_metric('msg_weight', msg_weight)
-        logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}")
-
-        # Upload artifacts
-        mlflow.log_dict(dataset.to_dict(), 'old_dataset')
-
-        # Publish ML metrics
-        logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
-        exporter.prepare_histogram('msg_weight', 'Message Weight', mlflow.active_run().data.tags, msg_weight)
-
+        # Can use to send data
+        # producer.send_data(msg)
         #######################################################
-        # RESET globals
+        # END processing
         #######################################################
-        buffer = []
-        dataset = None
-    else:
-        logger.info(f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
-    logger.info("Completed process().")
 
-    # Can use to send data
-    # producer.send_data(msg)
-    #######################################################
-    # END processing
-    #######################################################
-
-    return dataset
+        return dataset
 
 
 @scdf_adapter(environment=None)
 def evaluate(data):
 
-    client = MlflowClient()
+    mlflow.end_run()
+    with mlflow.start_run(experiment_id=utils.get_env_var("MLFLOW_EXPERIMENT_ID")) as active_run:
 
-    # Print MLproject parameter(s)
-    logger.info(f"MLflow parameters: {data}")
+        client = MlflowClient()
 
-    #######################################################
-    # BEGIN processing
-    #######################################################
-    # Once the data is ready, start processing
-    if data:
+        # Print MLproject parameter(s)
+        logger.info(f"MLflow parameters: {data}")
 
-        # Load existing baseline model (or generate dummy regressor if no model exists)
-        version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
+        #######################################################
+        # BEGIN processing
+        #######################################################
+        # Once the data is ready, start processing
+        if data:
 
-        if version:
-            baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
+            # Load existing baseline model (or generate dummy regressor if no model exists)
+            version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
 
-            # Generate candidate model
-            candidate_model = DummyRegressor(strategy="mean").fit(data['x'], data['target'])
+            if version:
+                baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
 
-            # if model evaluation passes, promote candidate model to "staging", else retain baseline model
-            logging.info(f"Evaluating baseline vs candidate models: version={version}")
-            try:
-                mlflow.evaluate(
-                    candidate_model.model_uri,
-                    data,
-                    targets="target",
-                    model_type="regressor",
-                    validation_thresholds={
-                        "r2_score": MetricThreshold(
-                            threshold=0.5,
-                            min_absolute_change=0.05,
-                            min_relative_change=0.05,
-                            higher_is_better=True
-                        ),
-                    },
-                    baseline_model=baseline_model.model_uri,
-                )
+                # Generate candidate model
+                candidate_model = DummyRegressor(strategy="mean").fit(data['x'], data['target'])
 
-                logger.info("Candidate model passed evaluation; promoting to Staging...")
+                # if model evaluation passes, promote candidate model to "staging", else retain baseline model
+                logging.info(f"Evaluating baseline vs candidate models: version={version}")
+                try:
+                    mlflow.evaluate(
+                        candidate_model.model_uri,
+                        data,
+                        targets="target",
+                        model_type="regressor",
+                        validation_thresholds={
+                            "r2_score": MetricThreshold(
+                                threshold=0.5,
+                                min_absolute_change=0.05,
+                                min_relative_change=0.05,
+                                higher_is_better=True
+                            ),
+                        },
+                        baseline_model=baseline_model.model_uri,
+                    )
 
-                client.transition_model_version_stage(
-                    name="baseline_model",
-                    version=version,
-                    stage="Staging"
-                )
+                    logger.info("Candidate model passed evaluation; promoting to Staging...")
 
-                logger.info("Candidate model promoted successfully.")
+                    client.transition_model_version_stage(
+                        name="baseline_model",
+                        version=version,
+                        stage="Staging"
+                    )
 
-                logging.info("Updating baseline model...")
-                mlflow.sklearn.log_model(sk_model=candidate_model,
-                                         artifact_path='baseline_model',
-                                         registered_model_name='baseline_model',
-                                         await_registration_for=None)
+                    logger.info("Candidate model promoted successfully.")
 
-                logger.info("Baseline model updated successfully.")
+                    logging.info("Updating baseline model...")
+                    mlflow.sklearn.log_model(sk_model=candidate_model,
+                                             artifact_path='baseline_model',
+                                             registered_model_name='baseline_model',
+                                             await_registration_for=None)
 
-                # Publish ML metrics
-                exporter.prepare_counter('candidatemodel:deploynotification',
-                                         'New Candidate Model Readiness Notification', mlflow.active_run().data.tags, 1)
+                    logger.info("Baseline model updated successfully.")
 
-            except Exception as e:
-                logger.error(
-                    "Candidate model training failed to satisfy configured thresholds...could not promote. Retaining baseline model.")
+                    # Publish ML metrics
+                    exporter.prepare_counter('candidatemodel:deploynotification',
+                                             'New Candidate Model Readiness Notification', mlflow.active_run().data.tags, 1)
+
+                except Exception as e:
+                    logger.error(
+                        "Candidate model training failed to satisfy configured thresholds...could not promote. Retaining baseline model.")
+
+            else:
+                logger.error("Baseline model not found...could not perform evaluation")
 
         else:
-            logger.error("Baseline model not found...could not perform evaluation")
+            logger.info(f"Data not yet available for processing.")
 
-    else:
-        logger.info(f"Data not yet available for processing.")
+        logger.info("Completed process().")
 
-    logger.info("Completed process().")
+        # Can use to send data
+        # producer.send_data(msg)
+        #######################################################
+        # END processing
+        #######################################################
 
-    # Can use to send data
-    # producer.send_data(msg)
-    #######################################################
-    # END processing
-    #######################################################
-
-    return dataset
+        return dataset
