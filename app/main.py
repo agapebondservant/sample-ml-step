@@ -8,7 +8,7 @@ from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 from random import randrange
 import mlflow
-from mlflow.tracking import MlflowClient
+from mlflow import MlflowClient
 import pandas as pd
 from mlflow.models import MetricThreshold
 import json
