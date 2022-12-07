@@ -125,6 +125,7 @@ def process(msg):
             logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}")
 
             # Upload artifacts
+            dataset.index = dataset.index.astype('str')
             mlflow.log_dict(dataset.to_dict(), 'old_dataset')
 
             # Publish ML metrics
