@@ -14,6 +14,8 @@ from mlflow.models import MetricThreshold
 import json
 from sklearn.dummy import DummyRegressor
 import traceback
+from sklearn.datasets import load_iris
+from sklearn import tree
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -107,10 +109,18 @@ def process(msg):
             try:
                 baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
                 logger.info(f"Created new baseline model {baseline_model} - registering model...")
-                mlflow.sklearn.log_model(sk_model=baseline_model,
+
+                # NOTE: This is just for testing purposes...
+                iris = load_iris()
+                sk_model = tree.DecisionTreeClassifier()
+                sk_model = sk_model.fit(iris.data, iris.target)
+                mlflow.sklearn.log_model(sk_model, "sk_models")
+
+                """mlflow.sklearn.log_model(sk_model=baseline_model,
                                          artifact_path='baseline_model',
                                          registered_model_name='baseline_model',
-                                         await_registration_for=None)
+                                         await_registration_for=None)"""
+
                 logger.info("Logged model to Model Registry.")
             except BaseException as e:
                 logger.info("Could not register model", exc_info=True)
