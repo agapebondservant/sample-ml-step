@@ -16,68 +16,67 @@ from sklearn.dummy import DummyRegressor
 import traceback
 from sklearn.datasets import load_iris
 from sklearn import tree
+import ray
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
+ray.init(runtime_env={'working_dir': "."}) if not ray.is_initialized() else True
+
 
 #######################################################
-# Producer code: Callback for producer
+# REMOTE code
 #######################################################
 
-
-"""def on_send(self, _channel):
-    """""" Publishes data """"""
-    logger.info("in on_send...")
-    self.channel.basic_publish(self.exchange, self.routing_key, (json.dumps(self.data) or 'HELLO from ML Models'),
-                               pika.BasicProperties(content_type='text/plain',
-                                                    delivery_mode=pika.DeliveryMode.Persistent,
-                                                    timestamp=int(datetime.now().timestamp())))"""
-
-#######################################################
-# Consumer code: Callback for consumer
-#######################################################
+@ray.remote
+def log_model(**kwargs):
+    logger.info("In log_model...")
+    mlflow.sklearn.log_model(**kwargs)
 
 
-"""def on_receive(self, header, body):
-    global buffer
-    data = body.decode('ascii')
-    logger.info(f"Received message...{data}")
-    buffer.append(data)"""
+@ray.remote
+def evaluate_models(baseline_model=None, candidate_model=None, data=None, version=None):
+    logger.info("In evaluate_models...")
+    try:
+        client = MlflowClient()
 
-"""
-def load_ports():
-    #######################################################
-    # Producer code:
-    #######################################################
-    # Start publishing messages
-    """"""producer = ports.get_rabbitmq_port('producer',
-                                       ports.FlowType.OUTBOUND,
-                                       send_callback=on_send)""""""
+        mlflow.evaluate(
+            candidate_model.model_uri,
+            data,
+            targets="target",
+            model_type="regressor",
+            validation_thresholds={
+                "r2_score": MetricThreshold(
+                    threshold=0.5,
+                    min_absolute_change=0.05,
+                    min_relative_change=0.05,
+                    higher_is_better=True
+                ),
+            },
+            baseline_model=baseline_model.model_uri,
+        )
 
-    time.sleep(5)
+        logger.info("Candidate model passed evaluation; promoting to Staging...")
 
-    #######################################################
-    # Consumer code:
-    #######################################################
-    # Start consuming messages
-    """"""consumer = ports.get_rabbitmq_port('consumer',
-                                       ports.FlowType.INBOUND,
-                                       prefetch_count=0,
-                                       receive_callback=on_receive)""""""
-    raw_port = ports.get_rabbitmq_port(':firehose_proxy.raw',
-                                       ports.FlowType.INBOUND,
-                                       prefetch_count=0,
-                                       receive_callback=on_receive)
-    # processed_port = ports.get_rabbitmq_port(':firehose_proxy.processed',
-    #                                        ports.FlowType.INBOUND,
-    #                                         prefetch_count=0,
-    #                                         receive_callback=on_receive)
+        client.transition_model_version_stage(
+            name="baseline_model",
+            version=version,
+            stage="Staging"
+        )
 
-    # return ports for raw data and processed data
-    return raw_port
-"""
+        logger.info("Candidate model promoted successfully.")
+
+        logging.info("Updating baseline model...")
+        result = mlflow.sklearn.log_model(sk_model=candidate_model,
+                                          artifact_path='baseline_model',
+                                          registered_model_name='baseline_model',
+                                          await_registration_for=None)
+
+        return result
+    except BaseException as e:
+        logger.error(
+            "Candidate model training failed to satisfy configured thresholds...could not promote. Retaining baseline model.")
 
 
 @scdf_adapter(environment=None)
@@ -111,16 +110,21 @@ def process(msg):
                 logger.info(f"Created new baseline model {baseline_model} - registering model...")
 
                 # NOTE: This is just for testing purposes...
-                iris = load_iris()
+                """iris = load_iris()
                 sk_model = tree.DecisionTreeClassifier()
                 sk_model = sk_model.fit(iris.data, iris.target)
-                mlflow.sklearn.log_model(sk_model, "sk_models")
+                mlflow.sklearn.log_model(sk_model, "sk_models")"""
 
                 """mlflow.sklearn.log_model(sk_model=baseline_model,
                                          artifact_path='baseline_model',
                                          registered_model_name='baseline_model',
                                          await_registration_for=None)"""
-
+                result = log_model.remote(sk_model=baseline_model,
+                                          artifact_path='baseline_model',
+                                          registered_model_name='baseline_model',
+                                          await_registration_for=None)
+                logger.info("Get remote results...")
+                logger.info(ray.get(result))
                 logger.info("Logged model to Model Registry.")
             except BaseException as e:
                 logger.info("Could not register model", exc_info=True)
@@ -146,7 +150,8 @@ def process(msg):
         buffer = []
         dataset = None
     else:
-        logger.info(f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
+        logger.info(
+            f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
     logger.info("Completed process().")
 
     # Can use to send data
@@ -182,48 +187,14 @@ def evaluate(data):
 
             # if model evaluation passes, promote candidate model to "staging", else retain baseline model
             logging.info(f"Evaluating baseline vs candidate models: version={version}")
-            try:
-                mlflow.evaluate(
-                    candidate_model.model_uri,
-                    data,
-                    targets="target",
-                    model_type="regressor",
-                    validation_thresholds={
-                        "r2_score": MetricThreshold(
-                            threshold=0.5,
-                            min_absolute_change=0.05,
-                            min_relative_change=0.05,
-                            higher_is_better=True
-                        ),
-                    },
-                    baseline_model=baseline_model.model_uri,
-                )
+            result = evaluate_models.remote(baseline_model=baseline_model, candidate_model=candidate_model, data=data, version=version)
+            logger.info("Get remote results...")
+            logger.info(ray.get(result))
+            logger.info("Baseline model updated successfully.")
 
-                logger.info("Candidate model passed evaluation; promoting to Staging...")
-
-                client.transition_model_version_stage(
-                    name="baseline_model",
-                    version=version,
-                    stage="Staging"
-                )
-
-                logger.info("Candidate model promoted successfully.")
-
-                logging.info("Updating baseline model...")
-                mlflow.sklearn.log_model(sk_model=candidate_model,
-                                         artifact_path='baseline_model',
-                                         registered_model_name='baseline_model',
-                                         await_registration_for=None)
-
-                logger.info("Baseline model updated successfully.")
-
-                # Publish ML metrics
-                exporter.prepare_counter('candidatemodel:deploynotification',
-                                         'New Candidate Model Readiness Notification', mlflow.active_run().data.tags, 1)
-
-            except Exception as e:
-                logger.error(
-                    "Candidate model training failed to satisfy configured thresholds...could not promote. Retaining baseline model.")
+            # Publish ML metrics
+            exporter.prepare_counter('candidatemodel:deploynotification',
+                                     'New Candidate Model Readiness Notification', mlflow.active_run().data.tags, 1)
 
         else:
             logger.error("Baseline model not found...could not perform evaluation")
