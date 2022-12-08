@@ -16,13 +16,14 @@ from sklearn.dummy import DummyRegressor
 import traceback
 from sklearn.datasets import load_iris
 from sklearn import tree
+import os
 import ray
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
-ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt"}) if not ray.is_initialized() else True
+ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt", 'env_vars': dict(os.environ)}) if not ray.is_initialized() else True
 
 
 #######################################################
