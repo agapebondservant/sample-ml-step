@@ -1,0 +1,44 @@
+matplotlib
+pmdarima
+prophet
+psycopg2-binary
+sqlalchemy
+python-dotenv
+pandas
+wheel
+scikit-learn
+nbconvert
+seaborn
+mlflow==2.0.1
+#mlflow==1.26.1
+traitlets
+scipy
+plotly
+watchdog
+mpld3
+streamlit==1.11.1
+pika
+Pillow
+streamlit-autorefresh
+jupyterflow
+ray[default]
+lz4
+pyyaml
+prometheus-client
+protobuf==3.19.5
+# protobuf>=3.12,<5.0
+fastapi
+modin[ray]
+python-dotenv
+https://github.com/agapebondservant/pipeline-wrapper-accelerator/zipball/main
+prodict
+https://github.com/agapebondservant/ml-metrics-accelerator/zipball/main
+rsocket
+asyncio
+nest_asyncio
+# cryptography #=3.4.8
+python-snappy
+# pycryptodomex
+evidently
+boto3
+pytest
