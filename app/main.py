@@ -22,7 +22,7 @@ HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
-ray.init(runtime_env={'working_dir': "."}) if not ray.is_initialized() else True
+ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt"}) if not ray.is_initialized() else True
 
 
 #######################################################
