@@ -80,7 +80,7 @@ def load_ports():
 
 @scdf_adapter(environment=None)
 def process(msg):
-    with mlflow.start_run(experiment_id=utils.get_env_var("MLFLOW_EXPERIMENT_ID")) as active_run:
+    with mlflow.start_run(experiment_id=utils.get_env_var("MLFLOW_EXPERIMENT_ID"), run_id=utils.get_env_var('MLFLOW_RUN_ID')) as active_run:
 
         global buffer, dataset
 
@@ -152,7 +152,7 @@ def process(msg):
 
 @scdf_adapter(environment=None)
 def evaluate(data):
-    with mlflow.start_run(experiment_id=utils.get_env_var("MLFLOW_EXPERIMENT_ID")) as active_run:
+    with mlflow.start_run(experiment_id=utils.get_env_var("MLFLOW_EXPERIMENT_ID"), run_id=utils.get_env_var('MLFLOW_RUN_ID')) as active_run:
 
         client = MlflowClient()
 
