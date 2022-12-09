@@ -9,10 +9,12 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - run: cat ${{ secrets.SCDF_ML_ENV_FILE }} > .myenv
+      - run: |
+          touch .myenv
+          echo ${{ secrets.SCDF_ML_ENV_FILE }} > .myenv
+          cat .myenv
+          source .myenv
         name: Download environment variables
-      - run: source .myenv
-        name: Source environment variables
       - uses: actions-hub/kubectl@master
         name: Purge queues
         env:
