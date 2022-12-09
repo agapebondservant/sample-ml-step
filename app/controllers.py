@@ -16,9 +16,9 @@ class ScaledTaskController:
         logger.info("In log_model...")
         mlflow.sklearn.log_model(**kwargs)
 
-    def load_model(self, version, **kwargs):
+    def load_model(self, model_uri=None, **kwargs):
         logger.info("In load_model...")
-        return mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
+        return mlflow.sklearn.load_model(model_uri)
 
     def evaluate_models(self, baseline_model=None, candidate_model=None, data=None, version=None):
         logger.info("In evaluate_models...")

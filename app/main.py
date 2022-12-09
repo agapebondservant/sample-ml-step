@@ -53,7 +53,7 @@ def process(msg):
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
         logger.info(f"Version...{version}")
         if version:
-            baseline_model = ray.get(controller.load_model(f'models:/baseline_model/{version}'))
+            baseline_model = ray.get(controller.load_model.remote(model_uri=f'models:/baseline_model/{version}'))
         else:
             try:
                 baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
@@ -120,7 +120,7 @@ def evaluate(data):
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
 
         if version:
-            baseline_model = ray.get(controller.load_model(f'models:/baseline_model/{version}'))
+            baseline_model = ray.get(controller.load_model.remote(model_uri=f'models:/baseline_model/{version}'))
 
             # Generate candidate model
             candidate_model = DummyRegressor(strategy="mean").fit(data['x'], data['target'])
