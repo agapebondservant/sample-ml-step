@@ -12,15 +12,17 @@ jobs:
       - run: |
           touch .env
           echo ${{ secrets.SCDF_ML_ENV_FILE }} >> .env
-          source .env
         name: Download environment variables
-      - run: echo $PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST
+      - name: Dotenv Action
+        id: dotenv
+        uses: falti/dotenv-action@v1.0.2
+      - run: echo ${{ steps.dotenv.outputs.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}
       - uses: actions-hub/kubectl@master
         name: Purge RabbitMQ queues
         env:
           KUBE_CONFIG: ${{ secrets.SCDF_ML_KUBECONFIG }}
         with:
-          args: exec rabbitmq-0 -- bash -c "rabbitmqctl list_queues --vhost $PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost $PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST"
+          args: exec rabbitmq-0 -- bash -c "rabbitmqctl list_queues --vhost ${{ steps.dotenv.outputs.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }} | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost ${{ steps.dotenv.outputs.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}"
       - run: |
           java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=$DATAFLOW_URI --spring.shell.commandFile=commands/check-streams-commands.txt
         name: Update streaming pipeline if it does not exist, else create it
