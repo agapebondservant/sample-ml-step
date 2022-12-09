@@ -33,7 +33,7 @@ def process(msg):
     global buffer, dataset
 
     client = MlflowClient()
-    controller = ScaledTaskController()
+    controller = ScaledTaskController.remote()
 
     # Print MLproject parameter(s)
     logger.info(f"Here now...MLflow parameters: {msg}")
@@ -105,7 +105,7 @@ def process(msg):
 @scdf_adapter(environment=None)
 def evaluate(data):
     client = MlflowClient()
-    controller = ScaledTaskController()
+    controller = ScaledTaskController.remote()
 
     # Print MLproject parameter(s)
     logger.info(f"Here now...MLflow parameters: {data}")
