@@ -18,16 +18,16 @@ jobs:
         uses: xom9ikk/dotenv@v2
       - name: Create RabbitMQ Prepare Script
         run: |
-          touch ${{ github.workspace }}/prepare-rabbitmq.sh
-          echo "rabbitmqctl list_queues --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }} | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}" > ${{ github.workspace }}/prepare-rabbitmq.sh
-          chmod +x ${{ github.workspace }}/prepare-rabbitmq.sh
+          touch prepare-rabbitmq.sh
+          echo "rabbitmqctl list_queues --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }} | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}" > prepare-rabbitmq.sh
+          chmod +x prepare-rabbitmq.sh
       - uses: actions-hub/kubectl@master
         name: Purge RabbitMQ queues (1)
         env:
           KUBE_CONFIG: ${{ secrets.SCDF_ML_KUBECONFIG }}
         with:
           #args: exec rabbitmq-0 -- bash -c "rabbitmqctl list_queues --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }} | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}"
-          args: cp ${{ github.workspace }}/prepare-rabbitmq.sh default/rabbitmq-0:/tmp
+          args: cp prepare-rabbitmq.sh default/rabbitmq-0:/tmp
       - uses: actions-hub/kubectl@master
         name: Purge RabbitMQ queues (2)
         env:
