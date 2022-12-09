@@ -25,7 +25,7 @@ logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
-                      'env_vars': dict(os.environ), 'excludes': '*.jar'}) if not ray.is_initialized() else True
+                      'env_vars': dict(os.environ), 'excludes': ['*.jar']}) if not ray.is_initialized() else True
 
 
 @scdf_adapter(environment=None)
