@@ -22,7 +22,7 @@ jobs:
           KUBE_CONFIG: ${{ secrets.SCDF_ML_KUBECONFIG }}
         with:
           #args: exec rabbitmq-0 -- bash -c "rabbitmqctl list_queues --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }} | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}"
-          args: exec rabbitmq-0 -- bash -c "env |grep -i linear"
+          args: exec rabbitmq-0 -- bash -c "env help"
       - run: |
           java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=${{ env.DATAFLOW_URI }} --spring.shell.commandFile=commands/check-streams-commands.txt
         name: Update streaming pipeline if it does not exist, else create it
