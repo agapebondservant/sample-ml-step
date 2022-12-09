@@ -43,12 +43,12 @@ jobs:
           then
             echo "Updating existing SCDF pipeline..."
             touch update-scdf-ml-pipeline.txt
-            echo ${{ secrets.UPDATE_PIPELINE_CMD }} > update-scdf-ml-pipeline.txt
+            echo "${{ secrets.UPDATE_PIPELINE_CMD }}" > update-scdf-ml-pipeline.txt
             java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=${{ env.DEMO_DATAFLOW_URI }} --spring.shell.commandFile=update-scdf-ml-pipeline.txt
           else
             echo "SCDF pipeline not found, creating pipeline..."
             touch create-scdf-ml-pipeline.txt
-            echo ${{ secrets.CREATE_PIPELINE_CMD }} > create-scdf-ml-pipeline.txt
+            echo "${{ secrets.CREATE_PIPELINE_CMD }}" > create-scdf-ml-pipeline.txt
             java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=${{ env.DEMO_DATAFLOW_URI }} --spring.shell.commandFile=create-scdf-ml-pipeline.txt
           fi
         name: Update streaming pipelines if they do not exist, else create them
