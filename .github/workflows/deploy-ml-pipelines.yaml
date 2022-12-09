@@ -16,7 +16,7 @@ jobs:
           source .myenv
         name: Download environment variables
       - uses: actions-hub/kubectl@master
-        name: Purge queues
+        name: Purge RabbitMQ queues
         env:
           KUBE_CONFIG: ${{ secrets.SCDF_ML_KUBECONFIG }}
         with:
