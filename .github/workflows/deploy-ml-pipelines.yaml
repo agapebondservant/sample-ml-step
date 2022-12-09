@@ -10,10 +10,11 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - run: |
-          touch .myenv
-          echo ${{ secrets.SCDF_ML_ENV_FILE }} > .myenv
-          source .myenv
+          touch .env
+          echo ${{ secrets.SCDF_ML_ENV_FILE }} >> .env
+          source .env
         name: Download environment variables
+      - run: echo $PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST
       - uses: actions-hub/kubectl@master
         name: Purge RabbitMQ queues
         env:
