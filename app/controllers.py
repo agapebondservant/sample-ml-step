@@ -3,11 +3,14 @@ import logging
 import mlflow
 from mlflow import MlflowClient
 from mlflow.models import MetricThreshold
+import os
 
 #######################################################
 # REMOTE code
 #######################################################
 logger = logging.getLogger('scaledtasks')
+ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+                      'env_vars': dict(os.environ)}) if not ray.is_initialized() else True
 
 
 @ray.remote
