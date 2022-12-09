@@ -4,3 +4,4 @@ app/main.py.old
 data/__init__.py
 data/__pycache__/
 data/tmp.py
+commands/

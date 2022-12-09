@@ -3,6 +3,7 @@ run-name: ${{ github.actor }} will deploy the latest version of SCDF ML Training
 on: [push]
 env:
   DATAFLOW_URI: http://scdf.tanzudatatap.ml
+  SAMPLE_PIPELINE: linear-regression
 jobs:
   Deploy-SCDF-ML-Pipeline:
     runs-on: ubuntu-latest
@@ -35,6 +36,20 @@ jobs:
         with:
           args: exec rabbitmq-0 -- bash -c "/tmp/prepare-rabbitmq.sh"
       - run: |
-          java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=${{ env.DATAFLOW_URI }} --spring.shell.commandFile=commands/check-streams-commands.txt
-        name: Update streaming pipeline if it does not exist, else create it
+          touch check-streams-commands.txt
+          echo "dataflow config server --uri ${{ env.DATAFLOW_URI }}" > check-streams-commands.txt
+          echo "stream list" >> check-streams-commands.txt
+          if [ $(java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=${{ env.DATAFLOW_URI }} --spring.shell.commandFile=check-streams-commands.txt) | grep -c $SAMPLE_PIPELINE != 0 ]
+          then
+            echo "Updating existing SCDF pipeline..."
+            touch update-scdf-ml-pipeline.txt
+            echo ${{ secrets.UPDATE_PIPELINE_CMD }} > update-scdf-ml-pipeline.txt
+            java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=${{ env.DATAFLOW_URI }} --spring.shell.commandFile=update-scdf-ml-pipeline.txt
+          else
+            echo "SCDF pipeline not found, creating pipeline..."
+            touch create-scdf-ml-pipeline.txt
+            echo ${{ secrets.CREATE_PIPELINE_CMD }} > create-scdf-ml-pipeline.txt
+            java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=${{ env.DATAFLOW_URI }} --spring.shell.commandFile=create-scdf-ml-pipeline.txt
+          fi
+        name: Update streaming pipelines if they do not exist, else create them
       - run: echo "🍏 This job's status is ${{ job.status }}."
