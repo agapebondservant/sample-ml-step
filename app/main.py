@@ -18,66 +18,14 @@ from sklearn.datasets import load_iris
 from sklearn import tree
 import os
 import ray
+from app.controllers import ScaledTaskController
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
-ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt", 'env_vars': dict(os.environ)}) if not ray.is_initialized() else True
-
-
-#######################################################
-# REMOTE code
-#######################################################
-
-@ray.remote
-def log_model(**kwargs):
-    logger.info("In log_model...")
-    mlflow.sklearn.log_model(**kwargs)
-
-
-@ray.remote
-def evaluate_models(baseline_model=None, candidate_model=None, data=None, version=None):
-    logger.info("In evaluate_models...")
-    try:
-        client = MlflowClient()
-
-        mlflow.evaluate(
-            candidate_model.model_uri,
-            data,
-            targets="target",
-            model_type="regressor",
-            validation_thresholds={
-                "r2_score": MetricThreshold(
-                    threshold=0.5,
-                    min_absolute_change=0.05,
-                    min_relative_change=0.05,
-                    higher_is_better=True
-                ),
-            },
-            baseline_model=baseline_model.model_uri,
-        )
-
-        logger.info("Candidate model passed evaluation; promoting to Staging...")
-
-        client.transition_model_version_stage(
-            name="baseline_model",
-            version=version,
-            stage="Staging"
-        )
-
-        logger.info("Candidate model promoted successfully.")
-
-        logging.info("Updating baseline model...")
-        result = mlflow.sklearn.log_model(sk_model=candidate_model,
-                                          artifact_path='baseline_model',
-                                          registered_model_name='baseline_model',
-                                          await_registration_for=None)
-
-        return result
-    except BaseException as e:
-        logger.error(
-            "Candidate model training failed to satisfy configured thresholds...could not promote. Retaining baseline model.")
+ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+                      'env_vars': dict(os.environ)}) if not ray.is_initialized() else True
 
 
 @scdf_adapter(environment=None)
@@ -85,6 +33,7 @@ def process(msg):
     global buffer, dataset
 
     client = MlflowClient()
+    controller = ScaledTaskController()
 
     # Print MLproject parameter(s)
     logger.info(f"Here now...MLflow parameters: {msg}")
@@ -104,26 +53,15 @@ def process(msg):
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
         logger.info(f"Version...{version}")
         if version:
-            baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
+            baseline_model = ray.get(controller.load_model(f'models:/baseline_model/{version}'))
         else:
             try:
                 baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
                 logger.info(f"Created new baseline model {baseline_model} - registering model...")
-
-                # NOTE: This is just for testing purposes...
-                """iris = load_iris()
-                sk_model = tree.DecisionTreeClassifier()
-                sk_model = sk_model.fit(iris.data, iris.target)
-                mlflow.sklearn.log_model(sk_model, "sk_models")"""
-
-                """mlflow.sklearn.log_model(sk_model=baseline_model,
-                                         artifact_path='baseline_model',
-                                         registered_model_name='baseline_model',
-                                         await_registration_for=None)"""
-                result = log_model.remote(sk_model=baseline_model,
-                                          artifact_path='baseline_model',
-                                          registered_model_name='baseline_model',
-                                          await_registration_for=None)
+                result = controller.log_model.remote(sk_model=baseline_model,
+                                                     artifact_path='baseline_model',
+                                                     registered_model_name='baseline_model',
+                                                     await_registration_for=None)
                 logger.info("Get remote results...")
                 logger.info(ray.get(result))
                 logger.info("Logged model to Model Registry.")
@@ -167,6 +105,7 @@ def process(msg):
 @scdf_adapter(environment=None)
 def evaluate(data):
     client = MlflowClient()
+    controller = ScaledTaskController()
 
     # Print MLproject parameter(s)
     logger.info(f"Here now...MLflow parameters: {data}")
@@ -181,14 +120,16 @@ def evaluate(data):
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
 
         if version:
-            baseline_model = mlflow.sklearn.load_model(f'models:/baseline_model/{version}')
+            baseline_model = ray.get(controller.load_model(f'models:/baseline_model/{version}'))
 
             # Generate candidate model
             candidate_model = DummyRegressor(strategy="mean").fit(data['x'], data['target'])
 
             # if model evaluation passes, promote candidate model to "staging", else retain baseline model
-            logging.info(f"Evaluating baseline vs candidate models: version={version}")
-            result = evaluate_models.remote(baseline_model=baseline_model, candidate_model=candidate_model, data=data, version=version)
+            logging.info(
+                f"Evaluating baseline vs candidate models: baseline_model={baseline_model}, candidate_model={candidate_model}, version={version}")
+            result = controller.evaluate_models.remote(baseline_model=baseline_model, candidate_model=candidate_model,
+                                                       data=data, version=version)
             logger.info("Get remote results...")
             logger.info(ray.get(result))
             logger.info("Baseline model updated successfully.")
