@@ -1,0 +1,2 @@
+dataflow config server --uri http://scdf.tanzudatatap.ml
+stream list
