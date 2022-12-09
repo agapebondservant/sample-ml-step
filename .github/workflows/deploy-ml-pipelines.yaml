@@ -1,0 +1,30 @@
+name: SCDF ML Training Pipelines Deployment
+run-name: ${{ github.actor }} will deploy the latest version of SCDF ML Training Pipelines 🚀
+on: [push]
+env:
+  DATAFLOW_URI: http://scdf.tanzudatatap.ml
+jobs:
+  Deploy-SCDF-ML-Pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: cat ${{ secrets.SCDF_ML_ENV_FILE }} > .myenv
+        name: Download environment variables
+      - run: source .myenv
+        name: Source environment variables
+      - uses: actions-hub/kubectl@master
+        name: Purge queues
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        # with:
+        #   args: get pods
+        run: |
+          echo "🐧 Purging queues..."
+          for i in $(kubectl exec -it rabbitmq-0 -- bash -c "rabbitmqctl list_queues --vhost $PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST | awk '{print $1}'")
+          do kubectl exec -it rabbitmq-0 -- bash -c "rabbitmqctl purge_queue $i --vhost $PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST"
+          done
+      - run: |
+          java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=$DATAFLOW_URI --spring.shell.commandFile=commands/check-streams-commands.txt
+        name: Update streaming pipeline if it does not exist, else create it
+      - run: echo "🍏 This job's status is ${{ job.status }}."
