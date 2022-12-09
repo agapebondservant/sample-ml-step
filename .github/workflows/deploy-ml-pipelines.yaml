@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v3
       - run: |
           touch .env
-          echo "${{ secrets.SCDF_ML_ENV_FILE }} | base64 --decode" > ${{ github.workspace }}/.env
+          echo "${{ secrets.SCDF_ML_ENV_FILE }}" > ${{ github.workspace }}/.env
         name: Download environment variables
       - name: Dotenv Action
         id: dotenv
@@ -22,8 +22,7 @@ jobs:
           KUBE_CONFIG: ${{ secrets.SCDF_ML_KUBECONFIG }}
         with:
           args: |
-          exec rabbitmq-0 -- sh
-          rabbitmqctl list_queues --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }} | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}
+          exec rabbitmq-0 -- bash -c "rabbitmqctl list_queues --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }} | awk '{print $1}' |  xargs -n1 rabbitmqctl purge_queue --vhost ${{ env.PRODUCER_SCDF_ML_MODEL_RABBITMQ_VIRTUAL_HOST }}"
       - run: |
           java -jar spring-cloud-dataflow-shell-2.9.2.jar --dataflow.uri=$DATAFLOW_URI --spring.shell.commandFile=commands/check-streams-commands.txt
         name: Update streaming pipeline if it does not exist, else create it
