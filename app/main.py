@@ -1,24 +1,17 @@
 from scdfutils import utils, ports
 from scdfutils.run_adapter import scdf_adapter
-import pika
-from datetime import datetime
 import logging
-import time
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 from random import randrange
 import mlflow
 from mlflow import MlflowClient
-import pandas as pd
-from mlflow.models import MetricThreshold
-import json
 from sklearn.dummy import DummyRegressor
 import traceback
-from sklearn.datasets import load_iris
-from sklearn import tree
 import os
 import ray
 from app.controllers import ScaledTaskController
+from prodict import Prodict
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -81,7 +74,8 @@ def process(msg):
 
         # Publish ML metrics
         logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
-        exporter.prepare_histogram('msg_weight', 'Message Weight', utils.get_env_var('SCDF_RUN_TAGS'), msg_weight)
+        scdf_tags = Prodict.from_dict(utils.get_env_var('SCDF_RUN_TAGS'))
+        exporter.prepare_histogram('msg_weight', 'Message Weight', scdf_tags, msg_weight)
 
         #######################################################
         # RESET globals
@@ -138,8 +132,9 @@ def evaluate(ready):
             logger.info("Baseline model updated successfully.")
 
             # Publish ML metrics
+            scdf_tags = Prodict.from_dict(utils.get_env_var('SCDF_RUN_TAGS'))
             exporter.prepare_counter('candidatemodel:deploynotification',
-                                     'New Candidate Model Readiness Notification', utils.get_env_var('SCDF_RUN_TAGS'), 1)
+                                     'New Candidate Model Readiness Notification', scdf_tags, 1)
 
         else:
             logger.error("Baseline model not found...could not perform evaluation")
