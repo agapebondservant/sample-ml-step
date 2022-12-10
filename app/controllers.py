@@ -9,8 +9,8 @@ import os
 # REMOTE code
 #######################################################
 logger = logging.getLogger('scaledtasks')
-ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
-                      'env_vars': dict(os.environ), 'excludes': ['*.jar', '.git*/']}) if not ray.is_initialized() else True
+# ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+#                      'env_vars': dict(os.environ), 'excludes': ['*.jar', '.git*/']}) if not ray.is_initialized() else True
 
 
 @ray.remote
