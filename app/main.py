@@ -81,7 +81,7 @@ def process(msg):
 
         # Publish ML metrics
         logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
-        exporter.prepare_histogram('msg_weight', 'Message Weight', mlflow.active_run().data.tags, msg_weight)
+        exporter.prepare_histogram('msg_weight', 'Message Weight', utils.get_env_var('SCDF_RUN_TAGS'), msg_weight)
 
         #######################################################
         # RESET globals
@@ -139,7 +139,7 @@ def evaluate(ready):
 
             # Publish ML metrics
             exporter.prepare_counter('candidatemodel:deploynotification',
-                                     'New Candidate Model Readiness Notification', mlflow.active_run().data.tags, 1)
+                                     'New Candidate Model Readiness Notification', utils.get_env_var('SCDF_RUN_TAGS'), 1)
 
         else:
             logger.error("Baseline model not found...could not perform evaluation")
