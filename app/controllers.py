@@ -3,6 +3,7 @@ import logging
 import mlflow
 from mlflow import MlflowClient
 from mlflow.models import MetricThreshold
+import pandas as pd
 import os
 
 #######################################################
@@ -25,6 +26,12 @@ class ScaledTaskController:
         logger.info("In log_dict...")
         dataframe.index = dataframe.index.astype('str')
         mlflow.log_dict(dataframe.to_dict(), dict_name)
+
+    def get_dataframe_from_dict(self, run_id=None, artifact_name=None):
+        if run_id and artifact_name:
+            pd.DataFrame.from_dict(mlflow.artifacts.load_dict(f"runs:/{run_id}/{artifact_name}"))
+        else:
+            logger.error(f"Could not load dict with empty run_id or artifact_name (run_id={run_id}, artifact_name={artifact_name}")
 
     def evaluate_models(self, baseline_model=None, candidate_model=None, data=None, version=None):
         logger.info("In evaluate_models...")

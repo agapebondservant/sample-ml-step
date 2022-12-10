@@ -77,7 +77,7 @@ def process(msg):
         logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}")
 
         # Upload artifacts
-        controller.log_dict(dataframe=dataset, dict_name='dataset_snapshot')
+        controller.log_dict.remote(dataframe=dataset, dict_name='dataset_snapshot')
 
         # Publish ML metrics
         logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
@@ -106,9 +106,10 @@ def process(msg):
 def evaluate(ready):
     client = MlflowClient()
     controller = ScaledTaskController.remote()
+    run_id = utils.get_env_var('MLFLOW_RUN_ID')
 
     # Print MLproject parameter(s)
-    logger.info(f"Here now...MLflow parameters: {ready}")
+    logger.info(f"Here now...MLflow parameters: ready={ready}, run_id={run_id}")
 
     #######################################################
     # BEGIN processing
@@ -121,6 +122,8 @@ def evaluate(ready):
 
         if version:
             baseline_model = ray.get(controller.load_model.remote(model_uri=f'models:/baseline_model/{version}'))
+            data = ray.get(controller.get_dataframe_from_dict.remote(run_id=run_id, artifact_name='dataset_snapshot'))
+            data.index = utils.index_as_datetime(data)
 
             # Generate candidate model
             candidate_model = DummyRegressor(strategy="mean").fit(data['x'], data['target'])
