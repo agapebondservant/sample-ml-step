@@ -12,6 +12,7 @@ import os
 import ray
 from app.controllers import ScaledTaskController
 from prodict import Prodict
+import json
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
@@ -74,7 +75,7 @@ def process(msg):
 
         # Publish ML metrics
         logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
-        scdf_tags = Prodict.from_dict(utils.get_env_var('SCDF_RUN_TAGS'))
+        scdf_tags = Prodict.from_dict(json.loads(utils.get_env_var('SCDF_RUN_TAGS')))
         exporter.prepare_histogram('msg_weight', 'Message Weight', scdf_tags, msg_weight)
 
         #######################################################
@@ -132,7 +133,7 @@ def evaluate(ready):
             logger.info("Baseline model updated successfully.")
 
             # Publish ML metrics
-            scdf_tags = Prodict.from_dict(utils.get_env_var('SCDF_RUN_TAGS'))
+            scdf_tags = Prodict.from_dict(json.loads(utils.get_env_var('SCDF_RUN_TAGS')))
             exporter.prepare_counter('candidatemodel:deploynotification',
                                      'New Candidate Model Readiness Notification', scdf_tags, 1)
 
