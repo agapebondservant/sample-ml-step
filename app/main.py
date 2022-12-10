@@ -44,9 +44,10 @@ def process(msg):
     # BEGIN processing
     #######################################################
     buffer.append(msg.split(','))
+    ready_flag = len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
 
     # Once the window size is large enough, start processing
-    if len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200):
+    if ready_flag:
         dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
 
         # Generate and store baseline model if it does not already exist
@@ -76,8 +77,7 @@ def process(msg):
         logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}")
 
         # Upload artifacts
-        dataset.index = dataset.index.astype('str')
-        mlflow.log_dict(dataset.to_dict(), 'old_dataset')
+        controller.log_dict(dataframe=dataset, dict_name='dataset_snapshot')
 
         # Publish ML metrics
         logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
@@ -99,22 +99,22 @@ def process(msg):
     # END processing
     #######################################################
 
-    return dataset
+    return ready_flag
 
 
 @scdf_adapter(environment=None)
-def evaluate(data):
+def evaluate(ready):
     client = MlflowClient()
     controller = ScaledTaskController.remote()
 
     # Print MLproject parameter(s)
-    logger.info(f"Here now...MLflow parameters: {data}")
+    logger.info(f"Here now...MLflow parameters: {ready}")
 
     #######################################################
     # BEGIN processing
     #######################################################
     # Once the data is ready, start processing
-    if data:
+    if ready:
 
         # Load existing baseline model (or generate dummy regressor if no model exists)
         version = utils.get_latest_model_version(name='baseline_model', stages=['None'])

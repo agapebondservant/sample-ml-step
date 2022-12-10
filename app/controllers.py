@@ -9,8 +9,6 @@ import os
 # REMOTE code
 #######################################################
 logger = logging.getLogger('scaledtasks')
-# ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
-#                      'env_vars': dict(os.environ), 'excludes': ['*.jar', '.git*/']}) if not ray.is_initialized() else True
 
 
 @ray.remote
@@ -22,6 +20,11 @@ class ScaledTaskController:
     def load_model(self, model_uri=None, **kwargs):
         logger.info("In load_model...")
         return mlflow.sklearn.load_model(model_uri)
+
+    def log_dict(self, dataframe=None, dict_name=None):
+        logger.info("In log_dict...")
+        dataframe.index = dataframe.index.astype('str')
+        mlflow.log_dict(dataframe.to_dict(), dict_name)
 
     def evaluate_models(self, baseline_model=None, candidate_model=None, data=None, version=None):
         logger.info("In evaluate_models...")
