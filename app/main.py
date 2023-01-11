@@ -3,152 +3,164 @@ from scdfutils.run_adapter import scdf_adapter
 import logging
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
-from random import randrange
 import mlflow
 from mlflow import MlflowClient
-from sklearn.dummy import DummyRegressor
+from sklearn.dummy import DummyClassifier
 import traceback
 import os
 import ray
-from app.controllers import ScaledTaskController
+from distributed.controllers import ScaledTaskController
 from prodict import Prodict
 import json
+from datetime import datetime
+import app.sentiment_analysis
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
-                      'env_vars': dict(os.environ), 'excludes': ['*.jar', '.git*/']}) if not ray.is_initialized() else True
+                      'env_vars': dict(os.environ),
+                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
 
 
 @scdf_adapter(environment=None)
 def process(msg):
     global buffer, dataset
-
-    client = MlflowClient()
     controller = ScaledTaskController.remote()
+    buffer.append(msg.split(','))
+    ready = len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
+    run_id = utils.get_env_var('MLFLOW_RUN_ID')
+    experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
+    parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
 
     # Print MLproject parameter(s)
-    logger.info(f"Here now...MLflow parameters: {msg}")
+    logger.info(
+        f"MLflow parameters: ready={ready}, msg={msg}, run_id={run_id}, experiment_id={experiment_id}, parent_run_id={parent_run_id}")
 
-    # load_ports()
+    with mlflow.start_run(run_id=run_id, experiment_id=experiment_id, run_name=datetime.now().strftime("%Y-%m-%d-%H%M"),
+                          nested=True):
+        #######################################################
+        # BEGIN processing
+        #######################################################
 
-    #######################################################
-    # BEGIN processing
-    #######################################################
-    buffer.append(msg.split(','))
-    ready_flag = len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
+        # Once the window size is large enough, start processing
+        if ready:
+            dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
+            dataset = app.sentiment_analysis.prepare_data(dataset)
 
-    # Once the window size is large enough, start processing
-    if ready_flag:
-        dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
+            # Perform Test-Train Split
+            df_train, df_test = app.sentiment_analysis.train_test_split(dataset)
 
-        # Generate and store baseline model if it does not already exist
-        version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
-        logger.info(f"Version...{version}")
-        if version:
-            baseline_model = ray.get(controller.load_model.remote(model_uri=f'models:/baseline_model/{version}'))
+            # Perform tf-idf vectorization
+            x_train, x_test, y_train, y_test, vectorizer = app.sentiment_analysis.vectorization(df_train, df_test)
+
+            # Generate model
+            baseline_model = app.sentiment_analysis.train(x_train, x_test, y_train, y_test)
+
+            # Store metrics
+            app.sentiment_analysis.generate_and_save_metrics(x_train, x_test, y_train, y_test, baseline_model)
+
+            # Save model
+            app.sentiment_analysis.save_model(baseline_model)
+
+            # Save vectorizer
+            app.sentiment_analysis.save_vectorizer(vectorizer)
+
+            # Upload artifacts
+            controller.log_artifact.remote(parent_run_id, dataset, 'dataset_snapshot')
+
+            #######################################################
+            # RESET globals
+            #######################################################
+            buffer = []
+            dataset = None
         else:
-            try:
-                baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
-                logger.info(f"Created new baseline model {baseline_model} - registering model...")
-                result = controller.log_model.remote(sk_model=baseline_model,
-                                                     artifact_path='baseline_model',
-                                                     registered_model_name='baseline_model',
-                                                     await_registration_for=None)
-                logger.info("Get remote results...")
-                logger.info(ray.get(result))
-                logger.info("Logged model to Model Registry.")
-            except BaseException as e:
-                logger.info("Could not register model", exc_info=True)
-                traceback.print_exc()
-                raise e
-
-        # Log Custom ML Metrics
-        msg_weight = randrange(0, 101)
-        mlflow.log_metric('msg_weight', msg_weight)
-        logger.info(f"Logging Custom ML metrics - msg_weight...{msg_weight}")
-
-        # Upload artifacts
-        controller.log_dict.remote(dataframe=dataset, dict_name='dataset_snapshot')
-
-        # Publish ML metrics
-        logger.info(f"Exporting ML metric - msg_weight...{msg_weight}")
-        scdf_tags = Prodict.from_dict(json.loads(utils.get_env_var('SCDF_RUN_TAGS')))
-        exporter.prepare_histogram('msg_weight', 'Message Weight', scdf_tags, msg_weight)
+            logger.info(
+                f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
+        logger.info("Completed process().")
 
         #######################################################
-        # RESET globals
+        # END processing
         #######################################################
-        buffer = []
-        dataset = None
-    else:
-        logger.info(
-            f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
-    logger.info("Completed process().")
 
-    # Can use to send data
-    # producer.send_data(msg)
-    #######################################################
-    # END processing
-    #######################################################
-
-    return ready_flag
+        return ready
 
 
 @scdf_adapter(environment=None)
 def evaluate(ready):
-    client = MlflowClient()
     controller = ScaledTaskController.remote()
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
+    experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
+    parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
 
     # Print MLproject parameter(s)
-    logger.info(f"Here now...MLflow parameters: ready={ready}, run_id={run_id}")
+    logger.info(
+        f"MLflow parameters: ready={ready}, run_id={run_id}, experiment_id={experiment_id}, parent_run_id={parent_run_id}")
 
-    #######################################################
-    # BEGIN processing
-    #######################################################
-    # Once the data is ready, start processing
-    if ready:
+    with mlflow.start_run(run_id=run_id, experiment_id=experiment_id, run_name=datetime.now().strftime("%Y-%m-%d-%H%M"),
+                          nested=True):
+        #######################################################
+        # BEGIN processing
+        #######################################################
+        # Once the data is ready, start processing
+        if ready:
 
-        # Load existing baseline model (or generate dummy regressor if no model exists)
-        version = utils.get_latest_model_version(name='baseline_model', stages=['None'])
+            # Load existing baseline model (or generate dummy regressor if no model exists)
+            version = utils.get_latest_model_version(name='baseline_model', stages=['None', 'Staging'])
 
-        if version:
-            baseline_model = ray.get(controller.load_model.remote(model_uri=f'models:/baseline_model/{version}'))
-            data = ray.get(controller.get_dataframe_from_dict.remote(run_id=run_id, artifact_name='dataset_snapshot'))
-            data.index = utils.index_as_datetime(data)
+            if version:
+                # Get candidate model
+                candidate_model = ray.get(controller.load_model.remote(
+                    parent_run_id,
+                    'sklearn',
+                    model_uri=f'models:/baseline_model/{version}'))
 
-            # Generate candidate model
-            candidate_model = DummyRegressor(strategy="mean").fit(data['x'], data['target'])
+                # Get baseline model
+                if version > 0:
+                    baseline_model = ray.get(controller.load_model.remote(
+                        parent_run_id,
+                        'sklearn',
+                        model_uri=f'models:/baseline_model/{version-1}'))
+                else:
+                    dummy_data = app.sentiment_analysis.generate_dummy_model_data(num_classes=3, size=1000)
+                    baseline_model = DummyClassifier(strategy="uniform").fit(dummy_data['x'], dummy_data['target'])
 
-            # if model evaluation passes, promote candidate model to "staging", else retain baseline model
-            logging.info(
-                f"Evaluating baseline vs candidate models: baseline_model={baseline_model}, candidate_model={candidate_model}, version={version}")
-            result = controller.evaluate_models.remote(baseline_model=baseline_model, candidate_model=candidate_model,
-                                                       data=data, version=version)
-            logger.info("Get remote results...")
-            logger.info(ray.get(result))
-            logger.info("Baseline model updated successfully.")
+                # Get validation data
+                data = ray.get(controller.load_artifact.remote(parent_run_id,
+                                                               'dataset_snapshot',
+                                                               artifact_uri=f"runs:/{parent_run_id}/dataset_snapshot",
+                                                               dst_path="/parent/app/artifacts"))
+                data.index = utils.index_as_datetime(data)
 
-            # Publish ML metrics
-            scdf_tags = Prodict.from_dict(json.loads(utils.get_env_var('SCDF_RUN_TAGS')))
-            exporter.prepare_counter('candidatemodel:deploynotification',
-                                     'New Candidate Model Readiness Notification', scdf_tags, 1)
+                # Fit baseline model
+                # dummy_data['prediction'] = baseline_model.predict()
+
+                # if model evaluation passes, promote candidate model to "staging", else retain baseline model
+                logging.info(
+                    f"Evaluating baseline vs candidate models: baseline_model={baseline_model}, candidate_model={candidate_model}, version={version}")
+                result = controller.evaluate_models.remote(baseline_model=baseline_model,
+                                                           candidate_model=candidate_model,
+                                                           data=data, version=version)
+                logger.info("Get remote results...")
+                evaluation_result = ray.get(result)
+                logger.info(f"Evaluation result: {evaluation_result}")
+
+                # Publish ML metrics
+                scdf_tags = Prodict.from_dict(json.loads(utils.get_env_var('SCDF_RUN_TAGS')))
+                exporter.prepare_counter('candidatemodel:deploynotification',
+                                         'New Candidate Model Readiness Notification', scdf_tags,
+                                         int(evaluation_result))
+
+            else:
+                logger.error("Baseline model not found...could not perform evaluation")
 
         else:
-            logger.error("Baseline model not found...could not perform evaluation")
+            logger.info(f"Data not yet available for processing.")
 
-    else:
-        logger.info(f"Data not yet available for processing.")
+        logger.info("Completed process().")
+        #######################################################
+        # END processing
+        #######################################################
 
-    logger.info("Completed process().")
-
-    # Can use to send data
-    # producer.send_data(msg)
-    #######################################################
-    # END processing
-    #######################################################
-
-    return dataset
+        return dataset
