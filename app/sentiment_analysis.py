@@ -15,7 +15,12 @@ from mlmetrics import exporter
 from datetime import datetime, timedelta, timezone
 import pytz
 import json
+import ray
+import os
 
+ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+                      'env_vars': dict(os.environ),
+                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
 controller = ScaledTaskController.remote()
 
 
