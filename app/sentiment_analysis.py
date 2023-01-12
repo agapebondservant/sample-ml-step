@@ -9,7 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, f1_score, confusion_matrix
 import sklearn.model_selection as model_selection
 from distributed.controllers import ScaledTaskController
-from scdfutils import utils
+# from scdfutils import utils
 from prodict import Prodict
 from mlmetrics import exporter
 from datetime import datetime, timedelta, timezone
