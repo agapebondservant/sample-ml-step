@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} will deploy the latest version of SCDF ML Training
 on: [push]
 env:
   DATAFLOW_URI: http://scdf.tanzudatatap.ml
-  SAMPLE_PIPELINE: linear-regression
+  SAMPLE_PIPELINE: logistic-regression
 jobs:
   Deploy-SCDF-ML-Pipeline:
     runs-on: ubuntu-latest
