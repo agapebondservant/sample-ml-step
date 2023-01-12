@@ -17,9 +17,9 @@ HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
-ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+"""ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
-                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
+                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True"""
 
 
 @scdf_adapter(environment=None)
