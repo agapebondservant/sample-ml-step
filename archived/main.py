@@ -10,7 +10,7 @@ from sklearn.dummy import DummyRegressor
 import traceback
 import os
 import ray
-from distributed.controllers import ScaledTaskController
+from scdfutils.distributed.controllers import ScaledTaskController
 from prodict import Prodict
 import json
 
