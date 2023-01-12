@@ -3,7 +3,7 @@ from scdfutils.run_adapter import scdf_adapter
 import logging
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
-# import mlflow
+import mlflow
 from sklearn.dummy import DummyClassifier
 import os
 import ray
