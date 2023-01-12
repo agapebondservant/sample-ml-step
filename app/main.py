@@ -4,9 +4,7 @@ import logging
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 import mlflow
-from mlflow import MlflowClient
 from sklearn.dummy import DummyClassifier
-import traceback
 import os
 import ray
 from distributed.controllers import ScaledTaskController
@@ -19,10 +17,9 @@ HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 buffer = []
 dataset = None
-logger.info(f'ray initialized...{ray.is_initialized()}')
-ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+"""ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
-                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
+                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True"""
 
 
 @scdf_adapter(environment=None)
