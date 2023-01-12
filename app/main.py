@@ -7,7 +7,7 @@ import mlflow
 from sklearn.dummy import DummyClassifier
 import os
 import ray
-from scdfutils.distributed.controllers import ScaledTaskController
+from scdfutils.distributed import ScaledTaskController
 from prodict import Prodict
 import json
 from datetime import datetime
