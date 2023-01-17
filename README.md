@@ -4,6 +4,7 @@
 * Create a RabbitMQ virtual host "qcirbflj"
 * Create a Loadbalancer for the RabbitMQ service:
   * kubectl expose svc/rabbitmq-headless --name rabbitmq-external --port=5672 --target-port=5672 --type=LoadBalancer
+  * (On AWS, increase the newly created LoadBalancer endpoint's timeout to 3600 seconds)
 * Deploy the configmap dependency:
 ```
 kubectl delete configmap test-ml-model || true
