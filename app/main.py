@@ -15,7 +15,6 @@ import app.sentiment_analysis
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
-buffer = []
 dataset = None
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
@@ -24,10 +23,10 @@ ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
 
 @scdf_adapter(environment=None)
 def process(msg):
-    global buffer, dataset
+    global dataset
     controller = ScaledTaskController.remote()
-    buffer.append(msg.split(','))
-    ready = len(buffer) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
+    controller.append_buffer.remote(msg.split(','))
+    ready = controller.buffer_length.remote() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
     parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
@@ -44,6 +43,7 @@ def process(msg):
 
         # Once the window size is large enough, start processing
         if ready:
+            buffer = controller.read_buffer.remote()
             dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
             dataset = app.sentiment_analysis.prepare_data(dataset)
 
@@ -75,7 +75,7 @@ def process(msg):
             dataset = None
         else:
             logger.info(
-                f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {len(buffer)} ")
+                f"Buffer size not yet large enough to process: expected size {utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200}, actual size {controller.buffer_length.remote()} ")
         logger.info("Completed process().")
 
         #######################################################
