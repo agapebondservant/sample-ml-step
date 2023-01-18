@@ -71,7 +71,7 @@ def process(msg):
             #######################################################
             # RESET globals
             #######################################################
-            buffer = []
+            controller.reset_buffer.remote()
             dataset = None
         else:
             logger.info(
