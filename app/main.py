@@ -26,7 +26,7 @@ def process(msg):
     global dataset
     controller = ScaledTaskController.remote()
     controller.append_buffer.remote(msg.split(','))
-    ready = controller.buffer_length.remote() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
+    ready = ray.get(controller.buffer_length.remote()) > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
     parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
@@ -43,7 +43,7 @@ def process(msg):
 
         # Once the window size is large enough, start processing
         if ready:
-            buffer = controller.read_buffer.remote()
+            buffer = ray.get(controller.read_buffer.remote())
             dataset = utils.initialize_timeseries_dataframe(buffer, 'data/schema.csv')
             dataset = app.sentiment_analysis.prepare_data(dataset)
 
