@@ -15,8 +15,8 @@ import app.sentiment_analysis
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
-buffer = None
 dataset = None
+buffer = None
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
@@ -24,7 +24,7 @@ ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
 
 @scdf_adapter(environment=None)
 def process(msg):
-    global buffer, dataset
+    global dataset, buffer
     controller = ScaledTaskController.remote()
     buffer_new = ray.data.from_items([msg.split(',')])
     buffer = buffer_new if buffer is None else buffer.union(buffer_new)
@@ -45,7 +45,7 @@ def process(msg):
 
         # Once the window size is large enough, start processing
         if ready:
-            msgs = buffer.take_all()
+            msgs = utils.get_csv_rows('buffer_tmp.csv')
             dataset = utils.initialize_timeseries_dataframe(msgs, 'data/schema.csv')
             dataset = app.sentiment_analysis.prepare_data(dataset)
 
