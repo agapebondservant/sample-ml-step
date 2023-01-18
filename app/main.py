@@ -26,7 +26,8 @@ ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
 def process(msg):
     global buffer, dataset
     controller = ScaledTaskController.remote()
-    buffer = ray.data.from_items([msg.split(',')]) if buffer is None else buffer.union([msg.split(',')])
+    buffer_new = ray.data.from_items([msg.split(',')])
+    buffer = buffer_new if buffer is None else buffer.union(buffer_new)
     ready = buffer.count() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
