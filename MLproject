@@ -10,4 +10,4 @@ entry_points:
     parameters:
         msg1: {default: 'Evaluation test'}
         build-regression-model: {default: '{mlparams.build_regression_model}'}
-    command: 'python -c "import app.home; app.home.evaluate({build-regression-model})"'
+    command: 'python -c "import app.home; print('tests'); app.home.evaluate({build-regression-model})"'
