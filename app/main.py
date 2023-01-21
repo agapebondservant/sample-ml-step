@@ -30,7 +30,7 @@ def process(msg):
         logger.info("Preloading data...")
         buffer = ray.data.from_items(utils.text_to_numpy('./data/preload.csv'))
         logger.info("Data preloaded.")
-    buffer.union(ray.data.from_items([msg.split(',')]))
+    buffer = buffer.union(ray.data.from_items([msg.split(',')]))
     ready = buffer.count() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
