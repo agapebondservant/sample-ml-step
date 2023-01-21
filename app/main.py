@@ -8,7 +8,7 @@ from sklearn.dummy import DummyClassifier
 import os
 import ray
 from distributed.ray.distributed import ScaledTaskController
-# import distributed.ray.utilities as distutilities
+import distributed.ray.utilities as distutilities
 from prodict import Prodict
 import json
 from datetime import datetime
@@ -16,9 +16,9 @@ import app.sentiment_analysis
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
-"""ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
-                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True"""
+                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
 buffer = None
 dataset = None
 
@@ -28,13 +28,13 @@ def process(msg):
     logger.info("in process()...")
     global dataset, buffer
     controller = ScaledTaskController.remote()
-    """if buffer is None:
+    if buffer is None:
         logger.info("Preloading data...")
         buffer = ray.data.from_items(distutilities.text_to_numpy('./data/preload.csv'))
         logger.info("Data preloaded.")
-    buffer = buffer.union(ray.data.from_items([msg.split(',')]))"""
-    buffer_new = ray.data.from_items([msg.split(',')])
-    buffer = buffer_new if buffer is None else buffer.union(buffer_new)
+    buffer = buffer.union(ray.data.from_items([msg.split(',')]))
+    """buffer_new = ray.data.from_items([msg.split(',')])
+    buffer = buffer_new if buffer is None else buffer.union(buffer_new)"""
 
     ready = buffer.count() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
