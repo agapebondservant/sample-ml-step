@@ -1,18 +1,18 @@
 from scdfutils import utils, ports
-from scdfutils.run_adapter import scdf_adapter
 import logging
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 import mlflow
 from sklearn.dummy import DummyClassifier
-import os
-import ray
 from distributed.ray.distributed import ScaledTaskController
 import distributed.ray.utilities as distutilities
 from prodict import Prodict
 import json
 from datetime import datetime
 import app.sentiment_analysis
+import os
+# from scdfutils.run_adapter import scdf_adapter
+import ray
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
