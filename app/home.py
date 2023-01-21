@@ -22,6 +22,8 @@ ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
 buffer = None
 dataset = None
 
+import abcd
+
 
 @scdf_adapters(environment=None)
 def process(msg):
