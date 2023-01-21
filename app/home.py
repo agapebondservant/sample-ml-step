@@ -1,5 +1,5 @@
 from scdfutils import utils, ports
-from scdfutils.run_adapter import scdf_adapter
+from scdfutils.run_adapter import scdf_adapters
 import logging
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
@@ -23,7 +23,7 @@ buffer = None
 dataset = None
 
 
-@scdf_adapter(environment=None)
+@scdf_adapters(environment=None)
 def process(msg):
     logger.info("in process()...")
     global dataset, buffer
