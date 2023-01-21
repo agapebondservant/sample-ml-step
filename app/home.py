@@ -1,5 +1,5 @@
 from scdfutils import utils, ports
-from scdfutils.run_adapter import scdf_adapters
+from scdfutils.run_adapter import scdf_adapter
 import logging
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
