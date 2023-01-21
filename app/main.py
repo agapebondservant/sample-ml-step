@@ -25,6 +25,7 @@ dataset = None
 
 @scdf_adapter(environment=None)
 def process(msg):
+    logger.info("in process()...")
     global dataset, buffer
     controller = ScaledTaskController.remote()
     """if buffer is None:
