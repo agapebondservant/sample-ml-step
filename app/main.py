@@ -45,7 +45,7 @@ def process(msg):
 
         # Once the window size is large enough, start processing
         if ready:
-            msgs = utils.get_csv_rows('buffer_tmp.csv')
+            msgs = buffer.take_all()
             dataset = utils.initialize_timeseries_dataframe(msgs, 'data/schema.csv')
             dataset = app.sentiment_analysis.prepare_data(dataset)
 
