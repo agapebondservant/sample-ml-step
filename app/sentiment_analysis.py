@@ -23,6 +23,7 @@ ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
 controller = ScaledTaskController.remote()
 
+import abvs
 
 ########################
 # Ingest Data
