@@ -16,10 +16,10 @@ import app.sentiment_analysis
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
 dataset = None
-buffer = ray.data.read_csv('./data/preload.csv')
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
+buffer = ray.data.read_csv('./data/preload.csv')
 
 
 @scdf_adapter(environment=None)
