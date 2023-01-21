@@ -15,11 +15,11 @@ import app.sentiment_analysis
 
 HttpHealthServer.run_thread()
 logger = logging.getLogger('mlmodeltest')
-dataset = None
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
-buffer = ray.data.read_csv('./data/preload.csv')
+buffer = None
+dataset = None
 
 
 @scdf_adapter(environment=None)
@@ -27,7 +27,7 @@ def process(msg):
     global dataset, buffer
     controller = ScaledTaskController.remote()
     buffer_new = ray.data.from_items([msg.split(',')])
-    buffer = buffer_new if buffer is None else buffer.union(buffer_new)
+    buffer = ray.data.read_csv('./data/preload.csv') if buffer is None else buffer.union(buffer_new)
     ready = buffer.count() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
