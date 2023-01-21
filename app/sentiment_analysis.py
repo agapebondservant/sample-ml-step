@@ -21,9 +21,6 @@ from distributed.ray.distributed import ScaledTaskController
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
-controller = ScaledTaskController.remote()
-
-import abvs
 
 ########################
 # Ingest Data
@@ -134,6 +131,7 @@ def generate_and_save_metrics(x_train, x_test, y_train, y_test, model):
 ########################
 def save_model(model):
     logging.info("Saving model...")
+    controller = ScaledTaskController.remote()
     controller.log_model.remote(
         utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
         model,
@@ -146,6 +144,7 @@ def save_model(model):
 # Save Vectorizer
 ########################
 def save_vectorizer(vectorizer):
+    controller = ScaledTaskController.remote()
     logging.info("Saving vectorizer...")
     parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
     controller.log_artifact.remote(parent_run_id, vectorizer, '/parent/app/artifacts')
@@ -156,6 +155,7 @@ def save_vectorizer(vectorizer):
 ########################
 def predict(text, stage='None'):
     logging.info("Predicting sentiment...")
+    controller = ScaledTaskController.remote()
     sample = pd.Series(text)
     parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
     vectorizer = controller.load_artifact.remote(parent_run_id, 'sentiment_analysis_vectorizer')

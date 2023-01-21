@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 import app.sentiment_analysis
 import os
-# from scdfutils.run_adapter import scdf_adapter
+from scdfutils.run_adapter import scdf_adapter
 import ray
 
 HttpHealthServer.run_thread()
@@ -23,7 +23,7 @@ buffer = None
 dataset = None
 
 
-@scdf_adapters(environment=None)
+@scdf_adapter(environment=None)
 def process(msg):
     logger.info("in process()...")
     global dataset, buffer
