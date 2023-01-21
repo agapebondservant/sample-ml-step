@@ -27,11 +27,14 @@ dataset = None
 def process(msg):
     global dataset, buffer
     controller = ScaledTaskController.remote()
-    if buffer is None:
+    """if buffer is None:
         logger.info("Preloading data...")
         buffer = ray.data.from_items(distutilities.text_to_numpy('./data/preload.csv'))
         logger.info("Data preloaded.")
-    buffer = buffer.union(ray.data.from_items([msg.split(',')]))
+    buffer = buffer.union(ray.data.from_items([msg.split(',')]))"""
+    buffer_new = ray.data.from_items([msg.split(',')])
+    buffer = buffer_new if buffer is None else buffer.union(buffer_new)
+
     ready = buffer.count() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
