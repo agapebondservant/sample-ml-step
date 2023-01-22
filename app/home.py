@@ -29,7 +29,7 @@ def process(msg):
     controller = ScaledTaskController.remote()
     if buffer is None:
         logger.info("Preloading data...")
-        buffer = ray.data.from_items(utils.get_csv_rows('./data/preload.csv', columns=utils.get_csv_rows('./data/schema.csv')[0]))
+        buffer = ray.data.from_items(utils.get_csv_rows('./data/preload.csv'))
         logger.info("Data preloaded.")
     buffer = buffer.union(ray.data.from_items([msg.split(',')]))
 
