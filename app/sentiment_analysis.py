@@ -13,15 +13,19 @@ import sklearn.model_selection as model_selection
 from scdfutils import utils
 from prodict import Prodict
 from mlmetrics import exporter
+logging.info("starting sentiment 2...")
 from datetime import datetime, timedelta, timezone
 import pytz
 import json
+logging.info("starting sentiment 3...")
 import ray
+logging.info("starting sentiment 4...")
 import os
 
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
+logging.info("starting sentiment 5...")
 from distributed.ray.distributed import ScaledTaskController
 
 logging.info("in sentiment...")
