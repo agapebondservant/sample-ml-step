@@ -114,7 +114,7 @@ def generate_and_save_metrics(x_train, x_test, y_train, y_test, model):
     test_roc_auc = roc_auc_score(y_test, model.predict_proba(x_test), multi_class='ovo')
 
     logging.info("Saving metrics...")
-    parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
+    parent_run_id = utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
     utils.mlflow_log_metric(parent_run_id, key='sentiment_train_acc', value=train_acc)
     utils.mlflow_log_metric(parent_run_id, key='sentiment_test_acc', value=test_acc)
     utils.mlflow_log_metric(parent_run_id, key='sentiment_train_roc_auc', value=train_roc_auc)
@@ -137,9 +137,10 @@ def save_model(model):
     logging.info("Saving model...")
     controller = ScaledTaskController.remote()
     controller.log_model.remote(
-        utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
+        utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
         model,
         'sklearn',
+        artifact_path='sklearn',
         registered_model_name='baseline_model',
         await_registration_for=None)
 
@@ -150,7 +151,7 @@ def save_model(model):
 def save_vectorizer(vectorizer):
     controller = ScaledTaskController.remote()
     logging.info("Saving vectorizer...")
-    parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
+    parent_run_id = utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
     controller.log_artifact.remote(parent_run_id, vectorizer, '/parent/app/artifacts')
 
 
@@ -161,7 +162,7 @@ def predict(text, stage='None'):
     logging.info("Predicting sentiment...")
     controller = ScaledTaskController.remote()
     sample = pd.Series(text)
-    parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
+    parent_run_id = utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
     vectorizer = controller.load_artifact.remote(parent_run_id, 'sentiment_analysis_vectorizer')
     model = controller.load_model.remote(parent_run_id, 'sklearn', model_uri=f'models:/baseline_model/{stage}')
     transformed_sample = vectorizer.transform(sample)

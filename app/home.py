@@ -36,7 +36,7 @@ def process(msg):
     ready = buffer.count() > (utils.get_env_var('MONITOR_SLIDING_WINDOW_SIZE') or 200)
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
-    parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
+    parent_run_id = utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
 
     # Print MLproject parameter(s)
     logger.info(
@@ -97,7 +97,7 @@ def evaluate(ready):
     controller = ScaledTaskController.remote()
     run_id = utils.get_env_var('MLFLOW_RUN_ID')
     experiment_id = utils.get_env_var('MLFLOW_EXPERIMENT_ID')
-    parent_run_id = utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
+    parent_run_id = utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')])
 
     # Print MLproject parameter(s)
     logger.info(

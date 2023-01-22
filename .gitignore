@@ -5,3 +5,5 @@ data/__init__.py
 data/__pycache__/
 data/tmp.py
 commands/
+.DS_Store
+test.py

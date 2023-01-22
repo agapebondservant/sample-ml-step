@@ -51,7 +51,7 @@ def process(msg):
         logger.info(f"Version...{version}")
         if version:
             baseline_model = ray.get(controller.load_model.remote(
-                utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
+                utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
                 'sklearn',
                 model_uri=f'models:/baseline_model/{version}'))
         else:
@@ -59,7 +59,7 @@ def process(msg):
                 baseline_model = DummyRegressor(strategy="mean").fit(dataset['x'], dataset['target'])
                 logger.info(f"Created new baseline model {baseline_model} - registering model...")
                 result = controller.log_model.remote(
-                    utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
+                    utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
                     baseline_model,
                     'sklearn',
                     registered_model_name='baseline_model',
@@ -126,7 +126,7 @@ def evaluate(ready):
 
             if version:
                 baseline_model = ray.get(controller.load_model.remote(
-                    utils.get_parent_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
+                    utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
                     'sklearn',
                     model_uri=f'models:/baseline_model/{version}'))
                 data = ray.get(
