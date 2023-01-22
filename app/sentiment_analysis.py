@@ -19,9 +19,9 @@ import ray
 import os
 from distributed.ray.distributed import ScaledTaskController
 
-"""ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
+ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
-                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True"""
+                      'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
 
 logging.info("in sentiment...")
 
