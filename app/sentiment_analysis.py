@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 import logging
 
-logging.info("starting sentiment...")
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, f1_score, confusion_matrix
@@ -13,20 +12,18 @@ import sklearn.model_selection as model_selection
 from scdfutils import utils
 from prodict import Prodict
 from mlmetrics import exporter
-logging.info("starting sentiment 2...")
 from datetime import datetime, timedelta, timezone
 import pytz
 import json
-logging.info("starting sentiment 3...")
 import ray
-logging.info("starting sentiment 4...")
 import os
+logging.info("in sentiment 1...")
+from distributed.ray.distributed import ScaledTaskController
+logging.info("in sentiment 2...")
 
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
-logging.info("starting sentiment 5...")
-from distributed.ray.distributed import ScaledTaskController
 
 logging.info("in sentiment...")
 
