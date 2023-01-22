@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 import logging
+logging.info("starting sentiment...")
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, f1_score, confusion_matrix

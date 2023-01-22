@@ -1,5 +1,6 @@
 from scdfutils import utils, ports
 import logging
+logging.info("starting home...")
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 import mlflow
