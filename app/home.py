@@ -22,6 +22,8 @@ ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
 buffer = None
 dataset = None
 
+logging.info("Imported home...")
+
 
 @scdf_adapter(environment=None)
 def process(msg):
