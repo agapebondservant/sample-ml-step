@@ -17,9 +17,7 @@ import pytz
 import json
 import ray
 import os
-logging.info("in sentiment 1...")
 from distributed.ray.distributed import ScaledTaskController
-logging.info("in sentiment 2...")
 
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
