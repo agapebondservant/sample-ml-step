@@ -5,7 +5,6 @@ from mlmetrics import exporter
 import mlflow
 from sklearn.dummy import DummyClassifier
 from distributed.ray.distributed import ScaledTaskController
-import distributed.ray.utilities as distutilities
 from prodict import Prodict
 import json
 from datetime import datetime
@@ -30,7 +29,7 @@ def process(msg):
     controller = ScaledTaskController.remote()
     if buffer is None:
         logger.info("Preloading data...")
-        buffer = ray.data.from_items(distutilities.text_to_numpy('./data/preload.csv'))
+        buffer = ray.data.from_items(utils.get_csv_rows('./data/preload.csv'))
         logger.info("Data preloaded.")
     buffer = buffer.union(ray.data.from_items([msg.split(',')]))
     """buffer_new = ray.data.from_items([msg.split(',')])
