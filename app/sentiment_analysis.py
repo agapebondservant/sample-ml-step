@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 import logging
+
 logging.info("starting sentiment...")
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -17,13 +18,14 @@ import pytz
 import json
 import ray
 import os
-from distributed.ray.distributed import ScaledTaskController
 
 ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'env_vars': dict(os.environ),
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
+from distributed.ray.distributed import ScaledTaskController
 
 logging.info("in sentiment...")
+
 
 ########################
 # Ingest Data
@@ -170,8 +172,8 @@ def predict(text, stage='None'):
 
 def generate_dummy_model_data(num_classes=2, size=1000):
     x = np.linspace(0, np.pi * 8, num=size)
-    y = np.random.randint(0, num_classes, int(size/num_classes))
+    y = np.random.randint(0, num_classes, int(size / num_classes))
     dataset = pd.DataFrame(data={'x': x, 'target': y})
     now = pytz.utc.localize(datetime.now())
-    dataset.index = dataset.index.map(lambda i: now+timedelta(minutes=i))
+    dataset.index = dataset.index.map(lambda i: now + timedelta(minutes=i))
     return dataset

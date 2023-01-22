@@ -1,6 +1,5 @@
 from scdfutils import utils, ports
 import logging
-logging.info("starting home...")
 from scdfutils.http_status_server import HttpHealthServer
 from mlmetrics import exporter
 import mlflow
@@ -22,8 +21,6 @@ ray.init(runtime_env={'working_dir': ".", 'pip': "requirements.txt",
                       'excludes': ['*.jar', '.git*/', 'jupyter/']}) if not ray.is_initialized() else True
 buffer = None
 dataset = None
-
-logging.info("Imported home...")
 
 
 @scdf_adapter(environment=None)
