@@ -133,14 +133,14 @@ def generate_and_save_metrics(x_train, x_test, y_train, y_test, model):
 ########################
 # Save Model
 ########################
-def save_model(model):
+def save_model(model, artifact_path=None):
     logging.info("Saving model...")
     controller = ScaledTaskController.remote()
     controller.log_model.remote(
         utils.get_root_run_id(experiment_names=[utils.get_env_var('CURRENT_EXPERIMENT')]),
         model,
         'sklearn',
-        artifact_path='sklearn',
+        artifact_path=artifact_path or 'sklearn',
         registered_model_name='baseline_model',
         await_registration_for=None)
 
