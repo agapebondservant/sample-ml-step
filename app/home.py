@@ -153,7 +153,8 @@ def evaluate(ready):
 
                 # Publish ML metrics
                 scdf_tags = Prodict.from_dict(json.loads(utils.get_env_var('SCDF_RUN_TAGS')))
-                exporter.prepare_counter('candidatemodel:deploynotification',
+                scdf_tags = Prodict.from_dict({**scdf_tags, **{'model_name': 'sentimentanalysis'}})
+                exporter.prepare_counter('deploynotification',
                                          'New Candidate Model Readiness Notification', scdf_tags,
                                          int(evaluation_result))
 
